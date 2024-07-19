@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.request import Request
 from .api.serializers import BookSerializer,Book, GenereSerializer, Genere
 from django.db.models import Q
 
@@ -44,9 +45,10 @@ class CreateBook(APIView):
     model = Book
     serializer = BookSerializer
 
-    def post(self,request):
+    def post(self,request: Request):
         serializer = self.serializer(data=request.data)
-        print(request.POST)
+        self.serializer.gens = request.data.getlist('genere')
+        # print(request.POST)
         if serializer.is_valid():
             in_db = self.model.objects.filter(**serializer.validated_data)
             if in_db.exists():
