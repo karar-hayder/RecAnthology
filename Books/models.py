@@ -15,10 +15,11 @@ class Book(models.Model):
     author = models.CharField("author",max_length=300,blank=False,null=False)
     genere = models.ManyToManyField(Genere,related_name="books")
     isbn = models.CharField("isbn",max_length=100,blank=False,null=False)
-    description = models.CharField("description",max_length=3000,blank=False,null=False)
+    description = models.CharField("description",max_length=5000,blank=False,null=False)
     language = models.CharField("language",max_length=50,blank=False,null=False)
+    edition = models.CharField("edition",max_length=500,blank=False,null=False,default="First edition")
     pages  = models.PositiveIntegerField("pages",blank=False,null=False)
     likedPercent  = models.IntegerField("likedPercent",blank=False,null=False)
     
     def __str__(self) -> str:
-        return f"{self.title}:{self.isbn} -- {self.id}"
+        return f"{self.title}:{self.isbn}:{self.edition} -- {self.id}"
