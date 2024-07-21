@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.request import Request
 from .api.serializers import BookSerializer,Book, GenereSerializer, Genere
 from django.db.models import Q
-
+from . import ExtraTools
 class IndexView(APIView):
     def get(self,request):
         return Response("OK")
@@ -37,7 +37,7 @@ class AllBooks(APIView):
     serializer = BookSerializer
 
     def get(self,request):
-        data = {"data":self.serializer(self.model.objects.all(),many=True).data}
+        data = {"data":self.serializer(self.model.objects.all().order_by("-likedPercent")[:50],many=True).data}
 
         return Response(data)
     
@@ -100,3 +100,41 @@ class FilterBooks(APIView):
             return Response({"data":self.serializer(data,many=len(data) > 1).data})
         else:
             return Response({"data":self.serializer(self.model.objects.order_by("-likedPercent")[:50],many=True).data})
+
+class RecommendBooks(APIView):
+    def post(self,request):
+        needed = request.data
+        try:
+            needed = {Genere.objects.get(name=key):i for key,i in needed.items()}
+        except Exception as e:
+            return Response(f"{e}",status=status.HTTP_406_NOT_ACCEPTABLE)
+        needed_gens = ExtraTools.quickSort([(j,i) for i, j in needed.items()])[::-1]
+        highest_num = max(needed.values())
+        suggestion = []
+        books = []
+        if len(needed_gens) > 10:
+            needed_gens = needed_gens[:10]
+        for rating ,gener in needed_gens:
+            for ind,book in enumerate(gener.books.all()):
+                if ind > 20:
+                    break
+                elif book in books:
+                    continue
+
+                rt = 0
+                for g in book.genere.all():
+                    if g not in needed:
+                        needed[g] = 0
+                    rt += needed[g]
+
+                suggestion.append((round(rt/highest_num,3),book))
+                books.append(book)
+        
+        sort = ExtraTools.quickSort(suggestion)[::-1]
+        final_sort = [j for i,j in sort]
+        if len(final_sort) > 100:final_sort=final_sort[:100]
+        data = {}
+        for ind, book in enumerate(BookSerializer(final_sort,many=len(sort) > 1).data):
+            data[str(ind)] = {"relativity":sort[ind][0],"book":book}
+
+        return Response({"length" : len(final_sort),"data":data})

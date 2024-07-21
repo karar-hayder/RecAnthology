@@ -5,7 +5,8 @@ from .views import (IndexView
                     ,FilterBooks
                     ,GetBook
                     ,CreateBook
-                    ,CreateGenere)
+                    ,CreateGenere
+                    ,RecommendBooks)
 
 urlpatterns = [
     path('',IndexView.as_view()),
@@ -15,4 +16,5 @@ urlpatterns = [
     path('api/create/genere/',CreateGenere.as_view()),
     path('api/create/book/',CreateBook.as_view()),
     path('api/allbooks/',AllBooks.as_view()),
+    path('api/recommend/',RecommendBooks.as_view()),
 ]
