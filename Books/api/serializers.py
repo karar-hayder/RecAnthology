@@ -1,24 +1,24 @@
 from rest_framework import serializers
-from ..models import Book, Genere
+from ..models import Book, Genre
 
 # serializers.
-class GenereSerializer(serializers.Serializer):
+class GenreSerializer(serializers.Serializer):
     # id = serializers.IntegerField(read_only=True)
     name = serializers.CharField()
 
     class Meta:
-        model = Genere
+        model = Genre
         fields = ['name']
 
     def create(self, validated_data):
-        return Genere.objects.get_or_create(name=validated_data['name'])
+        return Genre.objects.get_or_create(name=validated_data['name'])
 
 class BookSerializer(serializers.Serializer):
     id = serializers.UUIDField(read_only=True)
     title = serializers.CharField(required=True, max_length=300)
     author = serializers.CharField(max_length=300)
-    # genere = GenereSerializer(many=True)
-    genere = serializers.SlugRelatedField(
+    # genre = GenreSerializer(many=True)
+    genre = serializers.SlugRelatedField(
         slug_field='name',
         read_only=True,
         many=True
@@ -31,12 +31,12 @@ class BookSerializer(serializers.Serializer):
     likedPercent = serializers.IntegerField()
 
     def create(self, validated_data):
-        generes_data = self.gens
+        genres_data = self.gens
 
         book = Book.objects.create(**validated_data)
-        # print('i got to genere creation --------------------------------------')
-        for genere_data in generes_data:            
-            book.genere.add(Genere.objects.get_or_create(name=genere_data)[0])
+        # print('i got to genre creation --------------------------------------')
+        for genre_data in genres_data:            
+            book.genre.add(Genre.objects.get_or_create(name=genre_data)[0])
         return book
     
     def validate(self, attrs):

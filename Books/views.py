@@ -2,25 +2,28 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.request import Request
-from .api.serializers import BookSerializer,Book, GenereSerializer, Genere
+from .api.serializers import BookSerializer,Book, GenreSerializer, Genre
 from django.db.models import Q
 from . import ExtraTools
+from rest_framework.permissions import IsAuthenticated,IsAdminUser
+
 class IndexView(APIView):
     def get(self,request):
         return Response("OK")
     
-class AllGeneres(APIView):
-    model = Genere
-    serializer = GenereSerializer
+class AllGenres(APIView):
+    model = Genre
+    serializer = GenreSerializer
 
     def get(self,request):
         data = {"data":self.serializer(self.model.objects.all(),many=True).data}
 
         return Response(data)
     
-class CreateGenere(APIView):
-    model = Genere
-    serializer = GenereSerializer
+class CreateGenre(APIView):
+    model = Genre
+    serializer = GenreSerializer
+    permission_classes = [IsAuthenticated,IsAdminUser]
 
     def post(self,request):
         serializer = self.serializer(data=request.data)
@@ -44,10 +47,11 @@ class AllBooks(APIView):
 class CreateBook(APIView):
     model = Book
     serializer = BookSerializer
+    permission_classes = [IsAuthenticated,IsAdminUser]
 
     def post(self,request: Request):
         serializer = self.serializer(data=request.data)
-        self.serializer.gens = request.data.getlist('genere')
+        self.serializer.gens = request.data.getlist('genre')
         # print(request.POST)
         if serializer.is_valid():
             in_db = self.model.objects.filter(**serializer.validated_data)
@@ -80,8 +84,8 @@ class FilterBooks(APIView):
         title_query = self.request.GET.get('title')
         id_query = self.request.GET.get('id')
         author_query = self.request.GET.get('author')
-        isbn_query = self.request.GET.get('isbn')
-        language_query = self.request.GET.get('language')
+        # isbn_query = self.request.GET.get('isbn') ### maybe Remove later
+        # language_query = self.request.GET.get('language')
         query = Q()
 
         if title_query:
@@ -90,10 +94,10 @@ class FilterBooks(APIView):
             query &= Q(id__icontains=id_query)
         if author_query:
             query &= Q(author__icontains=author_query)
-        if isbn_query:
-            query &= Q(isbn__icontains=isbn_query)
-        if language_query:
-            query &= Q(language__icontains=language_query)
+        # if isbn_query:
+        #     query &= Q(isbn__icontains=isbn_query)
+        # if language_query:
+        #     query &= Q(language__icontains=language_query)
 
         if query:
             data = self.model.objects.filter(query).order_by("-likedPercent")
@@ -101,13 +105,56 @@ class FilterBooks(APIView):
         else:
             return Response({"data":self.serializer(self.model.objects.order_by("-likedPercent")[:50],many=True).data})
 
-class RecommendBooks(APIView):
+class PublicRecommendBooks(APIView):
     def post(self,request):
         needed = request.data
         try:
-            needed = {Genere.objects.get(name=key):i for key,i in needed.items()}
+            needed = {Genre.objects.get(name=key):i for key,i in needed.items()}
         except Exception as e:
             return Response(f"{e}",status=status.HTTP_406_NOT_ACCEPTABLE)
+        needed_gens = ExtraTools.quickSort([(j,i) for i, j in needed.items()])[::-1]
+        highest_num = max(needed.values())
+        suggestion = []
+        books = []
+        if len(needed_gens) > 5:
+            needed_gens = needed_gens[:5]
+        for rating ,gener in needed_gens:
+            for ind,book in enumerate(gener.books.all()):
+                if ind > 5:
+                    break
+                elif book in books:
+                    continue
+
+                rt = 0
+                for g in book.genre.all():
+                    if g not in needed:
+                        needed[g] = 0
+                    rt += needed[g]
+
+                suggestion.append((round(rt/highest_num,3),book))
+                books.append(book)
+        
+        sort = ExtraTools.quickSort(suggestion)[::-1]
+        final_sort = [j for i,j in sort]
+        if len(final_sort) > 100:final_sort=final_sort[:100]
+        data = {}
+        for ind, book in enumerate(BookSerializer(final_sort,many=len(sort) > 1).data):
+            data[str(ind)] = {"relativity":sort[ind][0],"book":book}
+
+        return Response({"length" : len(final_sort),"data":data})
+
+class PrivateRecommendBooks(APIView):
+    model = Book
+    serializer = BookSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get(self,request):
+        needed : dict = self.request.user.get_genre_preferences()
+        if len(needed.keys()) < 1:
+            books = self.model.objects.order_by('-likedPercent')
+            data = self.serializer(books,many=len(sort) > 1).data
+            return Response({"length" : books.count(),"data":data})
+
         needed_gens = ExtraTools.quickSort([(j,i) for i, j in needed.items()])[::-1]
         highest_num = max(needed.values())
         suggestion = []
@@ -122,12 +169,12 @@ class RecommendBooks(APIView):
                     continue
 
                 rt = 0
-                for g in book.genere.all():
+                for g in book.genre.all():
                     if g not in needed:
                         needed[g] = 0
-                    rt += needed[g]
+                    rt += needed[g] * 10
 
-                suggestion.append((round(rt/highest_num,3),book))
+                suggestion.append((round(rt/highest_num,2),book))
                 books.append(book)
         
         sort = ExtraTools.quickSort(suggestion)[::-1]

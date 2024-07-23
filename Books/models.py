@@ -1,8 +1,8 @@
 from django.db import models
 import uuid
+from django.contrib.auth import get_user_model
 
-
-class Genere(models.Model):
+class Genre(models.Model):
     name = models.CharField("name",max_length=50,blank=False,null=False)
 
     def __str__(self) -> str:
@@ -13,7 +13,7 @@ class Book(models.Model):
           primary_key=True, editable=False)
     title = models.CharField("title",max_length=300,blank=False,null=False)
     author = models.CharField("author",max_length=300,blank=False,null=False)
-    genere = models.ManyToManyField(Genere,related_name="books")
+    genre = models.ManyToManyField(Genre,related_name="books")
     isbn = models.CharField("isbn",max_length=100,blank=False,null=False)
     description = models.CharField("description",max_length=5000,blank=False,null=False)
     language = models.CharField("language",max_length=50,blank=False,null=False)

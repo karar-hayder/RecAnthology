@@ -6,7 +6,10 @@ from rest_framework.request import Request
 from rest_framework import generics
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .api.serializers import UserSerializer,CustomUser
+from .api.serializers import (
+                                UserSerializer,CustomUser
+                                ,BookRatingSerializer,UserBookRating
+                                )
 # Create your views here.
 
 class Register(generics.CreateAPIView):
@@ -20,3 +23,11 @@ class Register(generics.CreateAPIView):
                 return Response("There is already a user with this email",status=status.HTTP_409_CONFLICT)
         
         return super().create(request, *args, **kwargs)
+
+class RateBook(generics.CreateAPIView):
+    queryset = UserBookRating.objects.all()
+    serializer_class = BookRatingSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
