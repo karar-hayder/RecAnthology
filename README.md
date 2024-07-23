@@ -20,7 +20,7 @@
 ## Features
 
 * User authentication and authorization using JWT
-* Rate books with a likeness score from 1 to 5
+* Rate books with a likeness score from 1 to 10
 * Track user genre preferences based on book ratings
 * API endpoints for CRUD operations on users, books, and ratings
 * Efficiently update user preferences upon new ratings
