@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'users.apps.UsersConfig',
     'Books.apps.BooksConfig',
+    'moviesNshows.apps.MoviesnshowsConfig',
 ]
 
 MIDDLEWARE = [
