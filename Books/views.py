@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.request import Request
 from .api.serializers import BookSerializer,Book, GenreSerializer, Genre
 from django.db.models import Q
-from . import ExtraTools
+from myutils import ExtraTools
 from rest_framework.permissions import IsAuthenticated,IsAdminUser
 
 class IndexView(APIView):
@@ -70,10 +70,8 @@ class GetBook(APIView):
         if not id_query:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         query = Q()  
-        if id_query:
-            query &= Q(id__icontains=id_query)
-        if query:
-            return Response({"data":self.serializer(self.model.objects.get(query)).data})
+        query &= Q(id__icontains=id_query)
+        return Response({"data":self.serializer(self.model.objects.get(query)).data})
         
 
 class FilterBooks(APIView):
