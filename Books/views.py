@@ -124,12 +124,13 @@ class PublicRecommendBooks(APIView):
                     continue
 
                 rt = 0
-                for g in book.genre.all():
+                genres = book.genre.all()
+                for g in genres:
                     if g not in needed:
-                        needed[g] = 0
-                    rt += needed[g]
+                        needed[g] = 6
+                    rt += ExtraTools.scale(needed[g],(1,10),(-5,5)) * 20
 
-                suggestion.append((round(rt/highest_num,3),book))
+                suggestion.append((round(rt/(len(genres)*100),1),book))
                 books.append(book)
         
         sort = ExtraTools.quickSort(suggestion)[::-1]
@@ -147,14 +148,13 @@ class PrivateRecommendBooks(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self,request):
-        needed : dict = self.request.user.get_genre_preferences()
+        needed : dict = self.request.user.get_books_genre_preferences()
         if len(needed.keys()) < 1:
             books = self.model.objects.order_by('-likedPercent')
-            data = self.serializer(books,many=len(sort) > 1).data
+            data = self.serializer(books,many=len(books) > 1).data
             return Response({"length" : books.count(),"data":data})
 
         needed_gens = ExtraTools.quickSort([(j,i) for i, j in needed.items()])[::-1]
-        highest_num = max(needed.values())
         suggestion = []
         books = []
         if len(needed_gens) > 10:
@@ -167,12 +167,13 @@ class PrivateRecommendBooks(APIView):
                     continue
 
                 rt = 0
-                for g in book.genre.all():
+                genres = book.genre.all()
+                for g in genres:
                     if g not in needed:
                         needed[g] = 0
-                    rt += needed[g] * 10
+                    rt += needed[g] * 20
 
-                suggestion.append((round(rt/highest_num,2),book))
+                suggestion.append((round(rt/(len(genres)*100),3),book))
                 books.append(book)
         
         sort = ExtraTools.quickSort(suggestion)[::-1]

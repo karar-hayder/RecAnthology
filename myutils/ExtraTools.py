@@ -39,3 +39,8 @@ def quickSort(arr:list):
         else:
             right_list.append(i)    
     return quickSort(left_list) + [pivot] + quickSort(right_list)
+
+
+## To scale the rating from 1-10 to -5-5
+def scale(x, srcRange, dstRange) -> float:
+    return round((x-srcRange[0])*(dstRange[1]-dstRange[0])/(srcRange[1]-srcRange[0])+dstRange[0],3)
