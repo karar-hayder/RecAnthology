@@ -32,6 +32,15 @@ class CreateGenre(APIView):
             return Response({'data':self.serializer(new_data).data},status=status.HTTP_201_CREATED)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
+
+class AllTvMedia(APIView):
+    model = TvMedia
+    serializer = TvMediaSerializer
+
+    def get(self,request):
+        data = {"data":self.serializer(self.model.objects.all().order_by("-startyear")[:50],many=True).data}
+
+        return Response(data)
 class CreateTvMedia(APIView):
     model = TvMedia
     serializer = TvMediaSerializer
@@ -61,3 +70,113 @@ class GetTvMedia(APIView):
         query &= Q(id__icontains=id_query)
         return Response({"data":self.serializer(self.model.objects.get(query)).data})
         
+class FilterTvMedia(APIView):
+    model = TvMedia
+    serializer = TvMediaSerializer
+
+    def get(self,request):
+        title_query = self.request.GET.get('title')
+        startyear_query = self.request.GET.get('start_year')
+        endyear_query = self.request.GET.get('end_year')
+        media_type_query = self.request.GET.get('media_type')
+        query = Q()
+
+        if title_query:
+            query &= Q(original_title__icontains=title_query)
+
+        if media_type_query:
+            query &= Q(media_type__icontains=media_type_query)
+        if startyear_query:
+            query &= Q(startyear__gte=int(startyear_query))
+        if endyear_query:
+            query &= Q(startyear__lte=int(endyear_query))
+        
+
+        if query:
+            data = self.model.objects.filter(query).order_by("-startyear")
+            return Response({"data":self.serializer(data,many=len(data) > 1).data})
+        else:
+            return Response({"data":self.serializer(self.model.objects.order_by("-startyear")[:50],many=True).data})
+        
+class PublicRecommendTvMedia(APIView):
+    def post(self,request):
+        needed = request.data
+        try:
+            needed : dict[Genre,int] = {Genre.objects.get(name=key):i for key,i in needed.items()}
+        except Exception as e:
+            return Response(f"{e}",status=status.HTTP_406_NOT_ACCEPTABLE)
+        needed_gens = ExtraTools.quickSort([(j,i) for i, j in needed.items()])[::-1]
+        highest_num = max(needed.values())
+        suggestion = []
+        tv_media = []
+        if len(needed_gens) > 5:
+            needed_gens = needed_gens[:5]
+        for rating ,gener in needed_gens:
+            for ind,media in enumerate(gener.tvmedia.all()):
+                if ind > 5:
+                    break
+                elif media in tv_media:
+                    continue
+
+                rt = 0
+                genres = media.genre.all()
+                for g in genres:
+                    if g not in needed:
+                        needed[g] = 6
+                    rt += ExtraTools.scale(needed[g],(1,10),(-5,5)) * 20
+
+                suggestion.append((round(rt/(len(genres)*100),1),media))
+                tv_media.append(media)
+        
+        sort = ExtraTools.quickSort(suggestion)[::-1]
+        final_sort = [j for i,j in sort]
+        if len(final_sort) > 100:final_sort=final_sort[:100]
+        data = {}
+        for ind, media in enumerate(TvMediaSerializer(final_sort,many=len(sort) > 1).data):
+            data[str(ind)] = {"relativity":sort[ind][0],"media":media}
+
+        return Response({"length" : len(final_sort),"data":data})
+
+class PrivateRecommendTvMedia(APIView):
+    model = TvMedia
+    serializer = TvMediaSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get(self,request):
+        needed : dict = self.request.user.get_media_genre_preferences()
+        if len(needed.keys()) < 1:
+            tv_media = self.model.objects.order_by('-startyear')
+            data = self.serializer(tv_media,many=len(sort) > 1).data
+            return Response({"length" : tv_media.count(),"data":data})
+
+        needed_gens = ExtraTools.quickSort([(j,i) for i, j in needed.items()])[::-1]
+        highest_num = max(needed.values()) * 20
+        suggestion = []
+        tv_media = []
+        if len(needed_gens) > 10:
+            needed_gens = needed_gens[:10]
+        for rating ,gener in needed_gens:
+            for ind,media in enumerate(gener.tvmedia.all()):
+                if ind > 20:
+                    break
+                elif media in tv_media:
+                    continue
+
+                rt = 0
+                genres = media.genre.all()
+                for g in genres:
+                    if g not in needed:
+                        needed[g] = 0
+                    rt += needed[g] * 20
+
+                suggestion.append((round(rt/(len(genres)*100),3),media))
+                tv_media.append(media)
+        
+        sort = ExtraTools.quickSort(suggestion)[::-1]
+        final_sort = [j for i,j in sort]
+        if len(final_sort) > 100:final_sort=final_sort[:100]
+        data = {}
+        for ind, media in enumerate(self.serializer(final_sort,many=len(sort) > 1).data):
+            data[str(ind)] = {"relativity":sort[ind][0],"media":media}
+
+        return Response({"length" : len(final_sort),"data":data})
