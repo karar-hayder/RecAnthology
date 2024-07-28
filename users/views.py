@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from .api.serializers import (
                                 UserSerializer,CustomUser
                                 ,BookRatingSerializer,UserBookRating
-                                )
+                                ,UserTvMediaRating, TvMediaRatingSerializer)
 # Create your views here.
 
 class Register(generics.CreateAPIView):
@@ -27,6 +27,14 @@ class Register(generics.CreateAPIView):
 class RateBook(generics.CreateAPIView):
     queryset = UserBookRating.objects.all()
     serializer_class = BookRatingSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class RateTvMedia(generics.CreateAPIView):
+    queryset = UserTvMediaRating.objects.all()
+    serializer_class = TvMediaRatingSerializer
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
