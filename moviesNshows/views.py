@@ -62,10 +62,7 @@ class GetTvMedia(APIView):
     model = TvMedia
     serializer = TvMediaSerializer
 
-    def get(self,request):
-        id_query = self.request.GET.get('id')
-        if not id_query:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+    def get(self,request,id_query):
         query = Q()  
         query &= Q(id__icontains=id_query)
         return Response({"data":self.serializer(self.model.objects.get(query)).data})
