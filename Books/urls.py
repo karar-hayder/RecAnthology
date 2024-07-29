@@ -1,24 +1,26 @@
 from django.urls import path
-from .views import (IndexView
-                    ,AllGenres
-                    ,AllBooks
-                    ,FilterBooks
-                    ,GetBook
-                    ,CreateBook
-                    ,CreateGenre
-                    ,PublicRecommendBooks
-                    ,PrivateRecommendBooks)
+from .views import (
+    IndexView,
+    AllGenres,
+    AllBooks,
+    FilterBooks,
+    GetBook,
+    CreateBook,
+    CreateGenre,
+    PublicRecommendBooks,
+    PrivateRecommendBooks
+)
 from users.views import RateBook
 
 urlpatterns = [
-    path('',IndexView.as_view()),
-    path('api/genres/all/',AllGenres.as_view()),
-    path('api/filter/',FilterBooks.as_view()),
-    path('api/get/',GetBook.as_view()),
-    path('api/create/genre/',CreateGenre.as_view()),
-    path('api/create/book/',CreateBook.as_view()),
-    path('api/allbooks/',AllBooks.as_view()),
-    path('api/recommend/public/',PublicRecommendBooks.as_view()),
-    path('api/recommend/private/',PrivateRecommendBooks.as_view()),
-    path('api/rate/book/',RateBook.as_view()),
+    path('', IndexView.as_view(), name='index'),
+    path('api/books/genres/', AllGenres.as_view(), name='books-all-genres'),
+    path('api/books/', AllBooks.as_view(), name='books-all'),
+    path('api/books/<int:id_query>/', GetBook.as_view(), name='book-detail'),
+    path('api/books/filter/', FilterBooks.as_view(), name='books-filter'),
+    path('api/books/genre/create/', CreateGenre.as_view(), name='books-create-genre'),
+    path('api/books/create/', CreateBook.as_view(), name='books-create'),
+    path('api/books/recommend/public/', PublicRecommendBooks.as_view(), name='books-recommend-public'),
+    path('api/books/recommend/private/', PrivateRecommendBooks.as_view(), name='books-recommend-private'),
+    path('api/books/rate/', RateBook.as_view(), name='books-rate'),
 ]

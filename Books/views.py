@@ -64,9 +64,7 @@ class CreateBook(APIView):
 class GetBook(APIView):
     model = Book
     serializer = BookSerializer
-
-    def get(self,request):
-        id_query = self.request.GET.get('id')
+    def get(self,request,id_query):
         if not id_query:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         query = Q()  
