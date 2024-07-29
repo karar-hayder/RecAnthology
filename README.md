@@ -15,15 +15,15 @@
 
 ## Introduction
 
-> RecAnthology (Recommended Anthology) is an intelligent recommendation system designed to curate collections of books, and potentially in the future, movies and music, based on user preferences. By leveraging advanced algorithms and user feedback, RecAnthology aims to provide personalized recommendations that cater to individual tastes, making the discovery of new content seamless and enjoyable.
+> RecAnthology (Recommended Anthology) is an intelligent recommendation system designed to curate collections of books, movies, and TV shows based on user preferences. By leveraging advanced algorithms and user feedback, RecAnthology aims to provide personalized recommendations that cater to individual tastes, making the discovery of new content seamless and enjoyable.
 
 ## Features
 
 * User authentication and authorization using JWT
-* Rate books with a likeness score from 1 to 10
-* Track user genre preferences based on book ratings
-* API endpoints for CRUD operations on users, books, and ratings
-* Efficiently update user preferences upon new ratings
+* Rate books, movies, and TV shows with a rating system
+* Track user genre preferences based on ratings
+* API endpoints for CRUD operations on users, books, movies, and TV shows
+* Personalized recommendations based on user preferences and feedback
 
 ## Technologies Used
 
@@ -127,7 +127,6 @@ Create a superuser:
 * Create your admin user account
 
 ```sh
-
 python manage.py createsuperuser
 ```
 
@@ -183,13 +182,26 @@ python manage.py runserver
 
 ### Genres
 
-* All Genres: /api/genres/all/
+* All Books Genres: `/api/books/genres/`
 
-  * GET: Retrieves all genres.
+  * GET: Retrieves all books genres.
   * Response: {"data": [Genre objects]}
-* Create Genre: /api/create/genre/
+* Create a book Genre: `/api/books/genre/create/`
 
-  * POST: Creates a new genre. Requires admin authentication.
+  * POST: Creates a new book genre. Requires admin authentication.
+  * Request: { "name": "Genre Name" }
+  * Response:
+    * 200 OK: { "data": { "id": 1, "name": "Genre Name" } } if genre already exists.
+    * 201 Created: { "data": { "id": 2, "name": "New Genre Name" } } if genre is created.
+    * 400 Bad Request: If the request is invalid.
+
+* All TvMedia Genres: `/api/tvmedia/genres/`
+
+  * GET: Retrieves all TvMedia genres.
+  * Response: {"data": [Genre objects]}
+* Create a TvMedia Genre: `/api/tvmedia/genre/create/`
+
+  * POST: Creates a new TvMedia genre. Requires admin authentication.
   * Request: { "name": "Genre Name" }
   * Response:
     * 200 OK: { "data": { "id": 1, "name": "Genre Name" } } if genre already exists.
@@ -198,11 +210,11 @@ python manage.py runserver
 
 ### Books
 
-* All Books: /api/allbooks/
+* All Books: `/api/books/`
 
   * GET: Retrieves the top 50 books ordered by liked percentage.
   * Response: {"data": [Book objects]}
-* Create Book: /api/create/book/
+* Create Book: `/api/create/book/`
 
   * POST: Creates a new book. Requires admin authentication.
   * Request: { "title": "Book Title", "author": "Author Name", "genre": ["Genre1", "Genre2"], ... }
@@ -210,37 +222,79 @@ python manage.py runserver
     * 200 OK: { "data": { "id": 1, "title": "Book Title", "author": "Author Name", ... } } if book already exists.
     * 201 Created: { "data": { "id": 2, "title": "New Book Title", "author": "New Author Name", ... } } if book is created.
     * 400 Bad Request: If the request is invalid.
-* Get Book: /api/get/
+* Get Book: `/api/books/get/<id_query>/`
 
   * GET: Retrieves a specific book by ID.
-  * Request: { "id": "Book ID" }
   * Response: { "data": { "id": "Book ID", "title": "Book Title", "author": "Author Name", ... } }
     * Error: 400 Bad Request if no ID is provided.
-* Filter Books: /api/filter/
+* Filter Books: `/api/books/filter/`
 
   * GET: Filters books based on title, author, and/or ID.
   * Request: { "title": "Book Title", "author": "Author Name", "id": "Book ID" }
   * Response: {"data": [Filtered Book objects]}
 
-### Recommendations
+### Books Recommendations
 
-* Public Recommend Books: /api/recommend/public/
+* Public Recommend Books: /api/books/recommend/public/
 
   * POST: Provides book recommendations based on genre ratings.
   * Request: { "Genre1": rating1, "Genre2": rating2, ... }
   * Response: {"length": number_of_books, "data": { "0": { "relativity": score, "book": { ... } }, ... } }
     * Error: 406 Not Acceptable if genres are invalid.
-* Private Recommend Books: /api/recommend/private/
+* Private Recommend Books: /api/books/recommend/private/
 
   * GET: Provides personalized book recommendations based on user's genre preferences. Requires authentication.
   * Response: {"length": number_of_books, "data": { "0": { "relativity": score, "book": { ... } }, ... } }
 
+### TV Media
+
+* All TV Media: `/api/tvmedia/`
+
+  * GET: Retrieves the top 50 TV media ordered by start year.
+  * Response: {"data": [TvMedia objects]}
+* Create TV Media: `/api/tvmedia/create/`
+
+  * POST: Creates a new TV media. Requires admin authentication.
+  * Request: { "original_title": "Title","primary_title": "Title", "media_type": "Type", "startyear": Year, "genre": ["Genre1", "Genre2"], ... }
+  * Response:
+    * 200 OK: { "data": { "id": 1, "original_title": "Title","primary_title": "Title", "media_type": "Type", "startyear": Year, ... } } if TV media already exists.
+    * 201 Created: { "data": { "id": 2, "original_title": "New Title", "media_type": "New Type", "startyear": New Year, ... } } if TV media is created.
+    * 400 Bad Request: If the request is invalid.
+* Get TV Media: `/api/tvmedia/get/<id_query>/`
+
+  * GET: Retrieves a specific TV media by ID query.
+  * Response: { "data": { "id": "ID", "original_title": "Title","primary_title": "Title", "media_type": "Type", "startyear": Year, ... } }
+* Filter TV Media: `/api/tvmedia/filter/`
+
+  * GET: Filters TV media based on title, media type, start year, and/or end year.
+  * Request: { "title": "Title", "media_type": "Type", "start_year": StartYear, "end_year": EndYear }
+  * Response: {"data": [Filtered TvMedia objects]}
+
+### TvMedia Recommendations
+
+* Public Recommend TV Media: `/api/tvmedia/recommend/public/`
+
+  * POST: Provides TV media recommendations based on genre ratings.
+  * Request: { "Genre1": rating1, "Genre2": rating2, ... }
+  * Response: {"length": number_of_media, "data": { "0": { "relativity": score, "media": { ... } }, ... } }
+    * Error: 406 Not Acceptable if genres are invalid.
+* Private Recommend TV Media: `api/tvmedia/recommend/private/`
+
+  * GET: Provides personalized TV media recommendations based on user's genre preferences. Requires authentication.
+  * Response: {"length": number_of_media, "data": { "0": { "relativity": score, "media": { ... } }, ... } }
+
 ### Ratings
 
-* Rate Book: /api/rate/book/
+* Rate Book: /api/books/rate/
   * POST: Allows authenticated users to rate a book.
   * Request: { "book_id": "Book ID", "rating": 1-10 }
   * Response: { "data": { "id": "Rating ID", "user": "User ID", "book": "Book ID", "rating": 1-10 } }
+    * Error: 400 Bad Request if the request is invalid.
+
+* Rate TvMedia: /api/tvmedia/rate/
+  * POST: Allows authenticated users to rate a Tv Media.
+  * Request: { "tvmedia": "TvMedia ID", "rating": 1-10 }
+  * Response: { "data": { "id": "Rating ID", "user": "User ID", "tvmedia": "TvMEdia ID", "rating": 1-10 } }
     * Error: 400 Bad Request if the request is invalid.
 
 ## (TODO) Running Tests
