@@ -6,6 +6,7 @@ from .api.serializers import BookSerializer,Book, GenreSerializer, Genre
 from django.db.models import Q
 from myutils import ExtraTools
 from rest_framework.permissions import IsAuthenticated,IsAdminUser
+from django.core.cache import cache
 
 class IndexView(APIView):
     def get(self,request):
@@ -16,7 +17,11 @@ class AllGenres(APIView):
     serializer = GenreSerializer
 
     def get(self,request):
-        data = {"data":self.serializer(self.model.objects.all(),many=True).data}
+        data = cache.get("books_genres")
+        if not data:
+            data = self.serializer(self.model.objects.all(),many=True).data
+            cache.set('books_genres',data,60*60)
+        data = {"data":data}
 
         return Response(data)
     
@@ -40,7 +45,11 @@ class AllBooks(APIView):
     serializer = BookSerializer
 
     def get(self,request):
-        data = {"data":self.serializer(self.model.objects.all().order_by("-likedPercent")[:50],many=True).data}
+        data = cache.get('all_books')
+        if not data:
+            data = self.serializer(self.model.objects.all().order_by("-likedPercent")[:50],many=True).data
+            cache.set('all_books',data,60*60)
+        data = {"data":data}
 
         return Response(data)
     
@@ -80,8 +89,8 @@ class FilterBooks(APIView):
         title_query = self.request.GET.get('title')
         id_query = self.request.GET.get('id')
         author_query = self.request.GET.get('author')
-        # isbn_query = self.request.GET.get('isbn') ### maybe Remove later
-        # language_query = self.request.GET.get('language')
+        genre_query = self.request.GET.get('genre')
+        likedPercent_query = self.request.GET.get('likedPercent')
         query = Q()
 
         if title_query:
@@ -90,10 +99,11 @@ class FilterBooks(APIView):
             query &= Q(id__icontains=id_query)
         if author_query:
             query &= Q(author__icontains=author_query)
-        # if isbn_query:
-        #     query &= Q(isbn__icontains=isbn_query)
-        # if language_query:
-        #     query &= Q(language__icontains=language_query)
+        if genre_query:
+            query &= Q(genre__name__icontains=genre_query)
+        if likedPercent_query:
+            query &= Q(likedPercent__gte=int(likedPercent_query))
+        
 
         if query:
             data = self.model.objects.filter(query).order_by("-likedPercent")
@@ -146,39 +156,42 @@ class PrivateRecommendBooks(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self,request):
-        needed : dict = self.request.user.get_books_genre_preferences()
-        if len(needed.keys()) < 1:
-            books = self.model.objects.order_by('-likedPercent')
-            data = self.serializer(books,many=len(books) > 1).data
-            return Response({"length" : books.count(),"data":data})
+        cache_key = f"{self.request.user.pk}_tvmedia_recommendation"
+        data = cache.get(cache_key)
+        if not data:
+            needed : dict = self.request.user.get_books_genre_preferences()
+            if len(needed.keys()) < 1:
+                books = self.model.objects.order_by('-likedPercent')
+                data = self.serializer(books,many=len(books) > 1).data
+                return Response({"length" : books.count(),"data":data})
 
-        needed_gens = ExtraTools.quickSort([(j,i) for i, j in needed.items()])[::-1]
-        suggestion = []
-        books = []
-        if len(needed_gens) > 10:
-            needed_gens = needed_gens[:10]
-        for rating ,gener in needed_gens:
-            for ind,book in enumerate(gener.books.all()):
-                if ind > 20:
-                    break
-                elif book in books:
-                    continue
+            needed_gens = ExtraTools.quickSort([(j,i) for i, j in needed.items()])[::-1]
+            suggestion = []
+            books = []
+            if len(needed_gens) > 10:
+                needed_gens = needed_gens[:10]
+            for rating ,gener in needed_gens:
+                for ind,book in enumerate(gener.books.all()):
+                    if ind > 20:
+                        break
+                    elif book in books:
+                        continue
 
-                rt = 0
-                genres = book.genre.all()
-                for g in genres:
-                    if g not in needed:
-                        needed[g] = 0
-                    rt += needed[g] * 20
+                    rt = 0
+                    genres = book.genre.all()
+                    for g in genres:
+                        if g not in needed:
+                            needed[g] = 0
+                        rt += needed[g] * 20
 
-                suggestion.append((round(rt/(len(genres)*100),3),book))
-                books.append(book)
-        
-        sort = ExtraTools.quickSort(suggestion)[::-1]
-        final_sort = [j for i,j in sort]
-        if len(final_sort) > 100:final_sort=final_sort[:100]
-        data = {}
-        for ind, book in enumerate(BookSerializer(final_sort,many=len(sort) > 1).data):
-            data[str(ind)] = {"relativity":sort[ind][0],"book":book}
-
-        return Response({"length" : len(final_sort),"data":data})
+                    suggestion.append((round(rt/(len(genres)*100),3),book))
+                    books.append(book)
+            
+            sort = ExtraTools.quickSort(suggestion)[::-1]
+            final_sort = [j for i,j in sort]
+            if len(final_sort) > 100:final_sort=final_sort[:100]
+            data = {}
+            for ind, book in enumerate(BookSerializer(final_sort,many=len(sort) > 1).data):
+                data[str(ind)] = {"relativity":sort[ind][0],"book":book}
+            cache.set(cache_key,data,60*60)
+        return Response({"length" : len(data),"data":data})

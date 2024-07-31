@@ -6,6 +6,7 @@ from moviesNshows.models import TvMedia, Genre as TvGenre
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from myutils.ExtraTools import scale
+from django.core.cache import cache
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -43,6 +44,7 @@ class CustomUser(AbstractUser):
         return f"{self.get_full_name()}"
     
     def update_books_genre_preferences(self):
+        cache.delete(f'{self.pk}_books_recomendation')
         UserGenrePreference = apps.get_model('users', 'UserBooksGenrePreference')
         ratings = self.rated_books.all()
         if not ratings.exists():
@@ -67,6 +69,7 @@ class CustomUser(AbstractUser):
             UserGenrePreference.objects.create(user=self, genre=genre, preference=perf)
     
     def update_media_genre_preferences(self):
+        cache.delete(f'{self.pk}_tvmedia_recomendation')
         UserGenrePreference = apps.get_model('users', 'UserTvMediaGenrePreference')
         ratings = self.rated_tvmedia.all()
         if not ratings.exists():
