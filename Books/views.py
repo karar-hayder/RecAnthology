@@ -5,16 +5,19 @@ from rest_framework.request import Request
 from .api.serializers import BookSerializer,Book, GenreSerializer, Genre
 from django.db.models import Q
 from myutils import ExtraTools
-from rest_framework.permissions import IsAuthenticated,IsAdminUser
+from rest_framework.permissions import IsAuthenticated,IsAdminUser,AllowAny
 from django.core.cache import cache
+from rest_framework.throttling import UserRateThrottle,AnonRateThrottle
 
 class IndexView(APIView):
     def get(self,request):
         return Response("OK")
     
 class AllGenres(APIView):
+    permission_classes = [AllowAny]
     model = Genre
     serializer = GenreSerializer
+    throttle_classes = [AnonRateThrottle,UserRateThrottle]
 
     def get(self,request):
         data = cache.get("books_genres")
@@ -43,6 +46,8 @@ class CreateGenre(APIView):
 class AllBooks(APIView):
     model = Book
     serializer = BookSerializer
+    permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle,UserRateThrottle]
 
     def get(self,request):
         data = cache.get('all_books')
@@ -73,6 +78,8 @@ class CreateBook(APIView):
 class GetBook(APIView):
     model = Book
     serializer = BookSerializer
+    permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle,UserRateThrottle]
     def get(self,request,id_query):
         if not id_query:
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -84,6 +91,8 @@ class GetBook(APIView):
 class FilterBooks(APIView):
     model = Book
     serializer = BookSerializer
+    permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle,UserRateThrottle]
 
     def get(self,request):
         title_query = self.request.GET.get('title')
@@ -112,6 +121,8 @@ class FilterBooks(APIView):
             return Response({"data":self.serializer(self.model.objects.order_by("-likedPercent")[:50],many=True).data})
 
 class PublicRecommendBooks(APIView):
+    throttle_classes = [AnonRateThrottle,UserRateThrottle]
+    permission_classes = [AllowAny]
     def post(self,request):
         needed = request.data
         try:
@@ -151,6 +162,7 @@ class PublicRecommendBooks(APIView):
         return Response({"length" : len(final_sort),"data":data})
 
 class PrivateRecommendBooks(APIView):
+    throttle_classes = [UserRateThrottle]
     model = Book
     serializer = BookSerializer
     permission_classes = [IsAuthenticated]

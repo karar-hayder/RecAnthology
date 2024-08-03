@@ -5,9 +5,12 @@ from rest_framework.request import Request
 from .api.serializers import Genre,GenreSerializer,TvMedia,TvMediaSerializer
 from django.db.models import Q
 from myutils import ExtraTools
-from rest_framework.permissions import IsAuthenticated,IsAdminUser
+from rest_framework.permissions import IsAuthenticated,IsAdminUser,AllowAny
 from django.core.cache import cache
+from rest_framework.throttling import UserRateThrottle,AnonRateThrottle
 class AllGenres(APIView):
+    throttle_classes = [AnonRateThrottle,UserRateThrottle]
+    permission_classes = [AllowAny]
     model = Genre
     serializer = GenreSerializer
 
@@ -37,9 +40,10 @@ class CreateGenre(APIView):
 
 
 class AllTvMedia(APIView):
+    throttle_classes = [AnonRateThrottle,UserRateThrottle]
+    permission_classes = [AllowAny]
     model = TvMedia
     serializer = TvMediaSerializer
-
     def get(self,request):
         data = cache.get('all_tvmedia')
         if not data:
@@ -65,6 +69,8 @@ class CreateTvMedia(APIView):
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 class GetTvMedia(APIView):
+    throttle_classes = [AnonRateThrottle,UserRateThrottle]
+    permission_classes = [AllowAny]
     model = TvMedia
     serializer = TvMediaSerializer
 
@@ -74,8 +80,10 @@ class GetTvMedia(APIView):
         return Response({"data":self.serializer(self.model.objects.get(query)).data})
         
 class FilterTvMedia(APIView):
+    throttle_classes = [AnonRateThrottle,UserRateThrottle]
     model = TvMedia
     serializer = TvMediaSerializer
+    permission_classes = [AllowAny]
 
     def get(self,request):
         title_query = self.request.GET.get('title')
@@ -104,6 +112,8 @@ class FilterTvMedia(APIView):
             return Response({"data":self.serializer(self.model.objects.order_by("-startyear")[:50],many=True).data})
         
 class PublicRecommendTvMedia(APIView):
+    throttle_classes = [AnonRateThrottle,UserRateThrottle]
+    permission_classes = [AllowAny]
     def post(self,request):
         needed = request.data
         try:
@@ -130,7 +140,7 @@ class PublicRecommendTvMedia(APIView):
                         needed[g] = 6
                     rt += ExtraTools.scale(needed[g],(1,10),(-5,5)) * 20
 
-                suggestion.append((round(rt/(len(genres)*100),1),media))
+                suggestion.append((round(rt/(len(genres)),2),media))
                 tv_media.append(media)
         
         sort = ExtraTools.quickSort(suggestion)[::-1]
@@ -143,6 +153,7 @@ class PublicRecommendTvMedia(APIView):
         return Response({"length" : len(final_sort),"data":data})
 
 class PrivateRecommendTvMedia(APIView):
+    throttle_classes = [UserRateThrottle]
     model = TvMedia
     serializer = TvMediaSerializer
     permission_classes = [IsAuthenticated]
@@ -154,8 +165,8 @@ class PrivateRecommendTvMedia(APIView):
         if not data:
             needed : dict = self.request.user.get_media_genre_preferences()
             if len(needed.keys()) < 1:
-                tv_media = self.model.objects.order_by('-startyear')
-                data = self.serializer(tv_media,many=len(sort) > 1).data
+                tv_media = self.model.objects.order_by('-startyear')[:100]
+                data = self.serializer(tv_media,many=len(tv_media) > 1).data
                 return Response({"length" : tv_media.count(),"data":data})
 
             needed_gens = ExtraTools.quickSort([(j,i) for i, j in needed.items()])[::-1]
