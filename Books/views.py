@@ -8,6 +8,7 @@ from myutils import ExtraTools
 from rest_framework.permissions import IsAuthenticated,IsAdminUser,AllowAny
 from django.core.cache import cache
 from rest_framework.throttling import UserRateThrottle,AnonRateThrottle
+from RecAnthology.custom_throttles import AdminThrottle
 
 class IndexView(APIView):
     def get(self,request):
@@ -32,6 +33,7 @@ class CreateGenre(APIView):
     model = Genre
     serializer = GenreSerializer
     permission_classes = [IsAuthenticated,IsAdminUser]
+    throttle_classes = [AdminThrottle]
 
     def post(self,request):
         serializer = self.serializer(data=request.data)
@@ -62,6 +64,7 @@ class CreateBook(APIView):
     model = Book
     serializer = BookSerializer
     permission_classes = [IsAuthenticated,IsAdminUser]
+    throttle_classes = [AdminThrottle]
 
     def post(self,request: Request):
         serializer = self.serializer(data=request.data)

@@ -8,6 +8,7 @@ from myutils import ExtraTools
 from rest_framework.permissions import IsAuthenticated,IsAdminUser,AllowAny
 from django.core.cache import cache
 from rest_framework.throttling import UserRateThrottle,AnonRateThrottle
+from RecAnthology.custom_throttles import AdminThrottle
 class AllGenres(APIView):
     throttle_classes = [AnonRateThrottle,UserRateThrottle]
     permission_classes = [AllowAny]
@@ -27,6 +28,7 @@ class CreateGenre(APIView):
     model = Genre
     serializer = GenreSerializer
     permission_classes = [IsAuthenticated,IsAdminUser]
+    throttle_classes = [AdminThrottle]
 
     def post(self,request):
         serializer = self.serializer(data=request.data)
@@ -55,6 +57,7 @@ class CreateTvMedia(APIView):
     model = TvMedia
     serializer = TvMediaSerializer
     permission_classes = [IsAuthenticated,IsAdminUser]
+    throttle_classes = [AdminThrottle]
 
     def post(self,request: Request):
         serializer = self.serializer(data=request.data)
