@@ -23,7 +23,7 @@ SECRET_KEY = os.environ['SECRET_KEY']
 
 DEBUG = bool(os.environ['DEBUG'])
 
-ALLOWED_HOSTS = list(os.environ['ALLOWED_HOSTS'])
+ALLOWED_HOSTS = [os.environ['ALLOWED_HOSTS']]
 
 ADMIN_PAGE_URL = os.environ['ADMIN_PAGE']
 
