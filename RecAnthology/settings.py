@@ -82,7 +82,9 @@ DATABASES = {
         'PASSWORD':os.environ['DB_PASSWORD'],
         'OPTIONS': {
           'autocommit': True,
-          'collation':os.environ['DB_COLLATION']
+          'collation':os.environ['DB_COLLATION'],
+          'init_command': "SET sql_mode='STRICT_TRANS_TABLES'" ,
+          "use_pure": True
         },
     }
 }
