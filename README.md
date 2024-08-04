@@ -74,6 +74,7 @@ pip install -r requirements.txt
 SECRET_KEY = ''## "Your secret key"
 DEBUG = True ## Change to False in production
 ALLOWED_HOSTS = ["*"] ## change it in production
+ADMIN_PAGE = "admin/" ## Admin page url change in production
 ## If you are using SQL server 
 DB_NAME = "[Name]"
 DB_HOST = "localhost" ## Database IP or leave it localhost if it is in the same machine
