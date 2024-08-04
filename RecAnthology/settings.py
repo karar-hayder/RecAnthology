@@ -25,6 +25,8 @@ DEBUG = bool(os.environ['DEBUG'])
 
 ALLOWED_HOSTS = list(os.environ['ALLOWED_HOSTS'])
 
+ADMIN_PAGE_URL = os.environ['ADMIN_PAGE']
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -117,8 +119,8 @@ REST_FRAMEWORK = {
     ],
 
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '12/min',
-        'user': '2/sec'
+        'anon': '60/min',
+        'user': '120/min'
     }
 }
 
