@@ -8,14 +8,14 @@
 * [Setup and Installation](#setup-and-installation)
 * [Usage](#usage)
 * [API Endpoints](#api-endpoints)
-* [Running Tests](#todo-running-tests)
+* [Running Tests](#running-tests)
 * [Contributing](#contributing)
 * [License](#license)
 * [Contact](#contact)
 
 ## Introduction
 
-> RecAnthology (Recommended Anthology) is an intelligent recommendation system designed to curate collections of books, movies, and TV shows based on user preferences. By leveraging advanced algorithms and user feedback, RecAnthology aims to provide personalized recommendations that cater to individual tastes, making the discovery of new content seamless and enjoyable.
+> RecAnthology (Recommended Anthology) is an intelligent recommendation system designed to curate collections of books, movies, and TV shows based on user preferences. By leveraging advanced algorithms and user feedback, RecAnthology aims to provide personalized recommendations that cater to individual tastes, making the discovery of new content seamless and enjoyable. The latest version includes expanded content, improved performance, and enhanced user management features.
 
 ## Features
 
@@ -24,6 +24,10 @@
 * Track user genre preferences based on ratings
 * API endpoints for CRUD operations on users, books, movies, and TV shows
 * Personalized recommendations based on user preferences and feedback
+* Expanded content with over 50k movies and shows, and up to 6k books
+* Added caching for improved performance
+* Comprehensive model testing for error detection
+* Enhanced data validation logic
 
 ## Technologies Used
 
@@ -297,7 +301,7 @@ python manage.py runserver
   * Response: { "data": { "id": "Rating ID", "user": "User ID", "tvmedia": "TvMEdia ID", "rating": 1-10 } }
     * Error: 400 Bad Request if the request is invalid.
 
-## (TODO) Running Tests
+## Running Tests
 
 ### To run the tests, use the following command
 
