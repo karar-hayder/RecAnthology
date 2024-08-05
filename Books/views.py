@@ -11,6 +11,8 @@ from rest_framework.throttling import UserRateThrottle,AnonRateThrottle
 from RecAnthology.custom_throttles import AdminThrottle
 
 class IndexView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle,UserRateThrottle]
     def get(self,request):
         return Response("OK")
     
