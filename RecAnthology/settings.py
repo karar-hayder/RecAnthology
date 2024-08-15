@@ -22,7 +22,7 @@ load_dotenv(os.path.join(BASE_DIR,'RecAnthology',"cred.env"))
 SECRET_KEY = os.environ['SECRET_KEY']
 
 # DEBUG = bool(os.environ['DEBUG']) # somthing wrong
-DEBUG = 0
+DEBUG = False
 
 ALLOWED_HOSTS = [os.environ['ALLOWED_HOSTS']]
 
