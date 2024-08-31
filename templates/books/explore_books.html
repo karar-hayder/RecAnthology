@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Explore Books{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{% static 'books/css/explore_books.css' %}">
+{% endblock head %}
+
+{% block content %}
+<section class="explore-books">
+    <div class="container">
+        <h1 class="section-title">Explore Books</h1>
+
+        <!-- Recently Added Books -->
+        <div class="carousel-section">
+            <h2 class="section-heading">Recently Added Books</h2>
+            <div class="carousel-wrapper">
+                <button class="carousel-control prev">&#9664;</button>
+                <div class="carousel">
+                    {% for book in recently_added_books %}
+                    <div class="carousel-item">
+                        <img src="{{ book.cover_image.url }}" alt="{{ book.title }} Cover">
+                        <h3>{{ book.title | slice:":30" }}{% if book.title|length > 30 %}...{% endif %}</h3>
+                        <p>{{ book.author }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button class="carousel-control next">&#9654;</button>
+            </div>
+        </div>
+
+        <!-- Most Liked Books -->
+        <div class="carousel-section">
+            <h2 class="section-heading">Most Liked Books</h2>
+            <div class="carousel-wrapper">
+                <button class="carousel-control prev">&#9664;</button>
+                <div class="carousel">
+                    {% for book in most_liked_books %}
+                    <div class="carousel-item">
+                        <img src="{{ book.cover_image.url }}" alt="{{ book.title }} Cover">
+                        <h3>{{ book.title | slice:":30" }}{% if book.title|length > 30 %}...{% endif %}</h3>
+                        <p>{{ book.author }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button class="carousel-control next">&#9654;</button>
+            </div>
+        </div>
+
+        <!-- Genre Sections -->
+        <div class="genres">
+            {% for genre, books in genre_books.items %}
+            <div class="carousel-section">
+                <h2 class="section-heading">{{ genre.name }}</h2>
+                <div class="carousel-wrapper">
+                    <button class="carousel-control prev">&#9664;</button>
+                    <div class="carousel">
+                        {% for book in books %}
+                        <div class="carousel-item">
+                            <img src="{{ book.cover_image.url }}" alt="{{ book.title }} Cover">
+                            <h3>{{ book.title|slice:":30" }}{% if book.title|length > 30 %}...{% endif %}</h3>
+                            <p>{{ book.author }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button class="carousel-control next">&#9654;</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
