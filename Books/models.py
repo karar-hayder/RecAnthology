@@ -20,6 +20,7 @@ class Book(models.Model):
     edition = models.CharField("edition",max_length=500,blank=False,null=False,default="First edition")
     pages  = models.PositiveIntegerField("pages",blank=False,null=False)
     likedPercent  = models.IntegerField("likedPercent",blank=False,null=False)
+    cover_image = models.ImageField("Cover Image", upload_to='book_covers/', default='book_covers/default_cover.jpg')
     
     def __str__(self) -> str:
         return f"{self.title}:{self.isbn}:{self.edition} -- {self.id}"
