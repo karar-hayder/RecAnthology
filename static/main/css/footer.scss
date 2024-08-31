@@ -1,0 +1,29 @@
+@import 'variables';
+
+.footer {
+    background-color: $footer-bg-color;
+    color: $footer-text-color;
+    padding: 1.5rem 0;
+    text-align: center;
+    font-size: 0.9rem;
+    font-style: italic;
+
+    .social-links {
+        margin-top: 0.5rem;
+        display: flex;
+        justify-content: center;
+        gap: 1.5rem;
+
+        .social-link {
+            color: $footer-text-color;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.1rem;
+            transition: color 0.3s ease;
+
+            &:hover {
+                color: lighten($footer-text-color, 20%);
+            }
+        }
+    }
+}

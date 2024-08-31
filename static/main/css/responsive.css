@@ -1,0 +1,15 @@
+@media (max-width: 768px) {
+  .header {
+    text-align: center;
+  }
+  .header .navbar {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .main-content h1 {
+    font-size: 1.8rem;
+  }
+  .main-content p {
+    font-size: 1rem;
+  }
+}/*# sourceMappingURL=responsive.css.map */

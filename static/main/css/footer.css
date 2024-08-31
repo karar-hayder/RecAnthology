@@ -1,0 +1,24 @@
+.footer {
+  background-color: #222222;
+  color: #b3b3b3;
+  padding: 1.5rem 0;
+  text-align: center;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+.footer .social-links {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+}
+.footer .social-links .social-link {
+  color: #b3b3b3;
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 0.1rem;
+  transition: color 0.3s ease;
+}
+.footer .social-links .social-link:hover {
+  color: #e6e6e6;
+}/*# sourceMappingURL=footer.css.map */

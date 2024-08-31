@@ -1,0 +1,29 @@
+.header {
+  background-color: #1c1c1c;
+  padding: 1rem 0;
+}
+.header .logo-text {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #f5c518;
+  background-image: linear-gradient(45deg, #f5c518, #ff8c00);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.header .logo-text span {
+  color: #ff8c00;
+}
+.header .navbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2rem;
+}
+.header .navbar .nav-link {
+  color: #e5e5e5;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+.header .navbar .nav-link:hover {
+  color: #f5c518;
+}/*# sourceMappingURL=header.css.map */

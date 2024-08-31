@@ -1,0 +1,32 @@
+@import 'variables';
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: $font-family;
+    color: $text-color;
+    background-color: $background-color;
+    line-height: 1.7;
+    font-size: 16px;
+}
+
+a {
+    color: $link-color;
+    text-decoration: none;
+    transition: color 0.3s ease;
+
+    &:hover {
+        color: $link-hover-color;
+    }
+}
+
+.container {
+    width: 100%;
+    max-width: $container-max-width;
+    margin: 0 auto;
+    padding: 0 15px;
+}

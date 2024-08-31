@@ -1,0 +1,36 @@
+@import 'variables';
+
+.header {
+    background-color: $secondary-color;
+    padding: 1rem 0;
+
+    .logo-text {
+        font-size: 2rem;
+        font-weight: bold;
+        color: $primary-color; // Use solid color for text
+        background-image: linear-gradient(45deg, $primary-color, $link-hover-color); // Gradient effect
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent; // Text color is made transparent so that the gradient shows
+
+        span {
+            color: $link-hover-color; // Solid orange for the unique touch
+        }
+    }
+
+    .navbar {
+        display: flex;
+        justify-content: flex-end;
+        gap: 2rem;
+
+        .nav-link {
+            color: $text-color;
+            font-weight: 600;
+            transition: color 0.3s ease;
+
+            &:hover {
+                color: $primary-color;
+            }
+        }
+    }
+}

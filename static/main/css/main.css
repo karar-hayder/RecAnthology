@@ -1,0 +1,139 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  color: #e5e5e5;
+  background-color: #141414;
+  line-height: 1.7;
+  font-size: 16px;
+}
+
+a {
+  color: #f5c518;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+a:hover {
+  color: #ff8c00;
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+.header {
+  background-color: #1c1c1c;
+  padding: 1rem 0;
+}
+.header .logo-text {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #f5c518;
+  background-image: linear-gradient(45deg, #f5c518, #ff8c00);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.header .logo-text span {
+  color: #ff8c00;
+}
+.header .navbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2rem;
+}
+.header .navbar .nav-link {
+  color: #e5e5e5;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+.header .navbar .nav-link:hover {
+  color: #f5c518;
+}
+
+.footer {
+  background-color: #222222;
+  color: #b3b3b3;
+  padding: 1.5rem 0;
+  text-align: center;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+.footer .social-links {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+}
+.footer .social-links .social-link {
+  color: #b3b3b3;
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 0.1rem;
+  transition: color 0.3s ease;
+}
+.footer .social-links .social-link:hover {
+  color: #e6e6e6;
+}
+
+.button {
+  padding: 0.75rem 2rem;
+  background: #f5c518;
+  background-image: linear-gradient(45deg, #f5c518, #ff8c00);
+  color: #1c1c1c;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 50px;
+  transition: background-image 0.3s ease;
+}
+.button:hover {
+  background-image: linear-gradient(45deg, #d1a609, #cc7000);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #ff8c00;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+p {
+  font-size: 1.2rem;
+  color: #e5e5e5;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .header {
+    text-align: center;
+  }
+  .header .navbar {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .main-content h1 {
+    font-size: 1.8rem;
+  }
+  .main-content p {
+    font-size: 1rem;
+  }
+}/*# sourceMappingURL=main.css.map */

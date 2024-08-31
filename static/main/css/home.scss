@@ -1,0 +1,57 @@
+@import 'variables';
+
+.welcome-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.button {
+    display: inline-block;
+    padding: 0.75rem 2rem;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    cursor: pointer;
+}
+
+.button {
+    background: linear-gradient(45deg, #f5c518, #ff8c00);
+    color: #141414;
+    border: 2px solid transparent;
+}
+
+.button:hover {
+    background: linear-gradient(45deg, #ff8c00, #f5c518);
+    color: #ffffff;
+    transform: translateY(-2px);
+}
+
+.button-secondary {
+    background: #1c1c1c;
+    color: #f5c518;
+    border: 2px solid #f5c518;
+}
+
+.button-secondary:hover {
+    background: #f5c518;
+    color: #1c1c1c;
+    border: 2px solid transparent;
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .welcome-buttons {
+        flex-direction: column; /* Stack buttons vertically */
+        gap: 1rem;
+    }
+
+    .button {
+        width: 100%; /* Full width buttons on smaller screens */
+        max-width: 300px; /* Limit the width of buttons */
+    }
+}
