@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Explore TV Media{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{% static 'moviesNshows/css/explore_tvmedia.css' %}">
+{% endblock head %}
+
+{% block content %}
+<section class="explore-tvmedia">
+    <div class="container">
+        <h1 class="section-title">Explore TV Media</h1>
+
+        <!-- Recently Added TV Media -->
+        <div class="carousel-section">
+            <h2 class="section-heading">Recently Added TV Media</h2>
+            <div class="carousel-wrapper">
+                <button class="carousel-control prev">&#9664;</button>
+                <div class="carousel">
+                    {% for tvm in recently_added_tvmmedia %}
+                    <div class="carousel-item">
+                        <img src="{{ tvm.cover_image.url }}" alt="{{ tvm.original_title }} Cover">
+                        <h3>{{ tvm.primary_title | slice:":30" }}{% if tvm.primary_title|length > 30 %}...{% endif %}</h3>
+                        <p>Start Year: {{ tvm.startyear }}</p>
+                        <p>Length: {{ tvm.length }} minutes</p>
+                        {% if tvm.over18 %}
+                            <p><strong>Over 18 only</strong></p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <button class="carousel-control next">&#9654;</button>
+            </div>
+        </div>
+
+        <!-- Most Liked TV Media -->
+        <div class="carousel-section">
+            <h2 class="section-heading">Most Liked TV Media</h2>
+            <div class="carousel-wrapper">
+                <button class="carousel-control prev">&#9664;</button>
+                <div class="carousel">
+                    {% for tvm in most_liked_tvmmedia %}
+                    <div class="carousel-item">
+                        <img src="{{ tvm.cover_image.url }}" alt="{{ tvm.original_title }} Cover">
+                        <h3>{{ tvm.primary_title | slice:":30" }}{% if tvm.primary_title|length > 30 %}...{% endif %}</h3>
+                        <p>Start Year: {{ tvm.startyear }}</p>
+                        <p>Length: {{ tvm.length }} minutes</p>
+                        {% if tvm.over18 %}
+                            <p><strong>Over 18 only</strong></p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <button class="carousel-control next">&#9654;</button>
+            </div>
+        </div>
+
+        <!-- Genre Sections -->
+        <div class="genres">
+            {% for genre, tvms in genres_tvmmedia.items %}
+            <div class="carousel-section">
+                <h2 class="section-heading">{{ genre.name }}</h2>
+                <div class="carousel-wrapper">
+                    <button class="carousel-control prev">&#9664;</button>
+                    <div class="carousel">
+                        {% for tvm in tvms %}
+                        <div class="carousel-item">
+                            <img src="{{ tvm.cover_image.url }}" alt="{{ tvm.original_title }} Cover">
+                            <h3>{{ tvm.primary_title | slice:":30" }}{% if tvm.primary_title|length > 30 %}...{% endif %}</h3>
+                            <p>Start Year: {{ tvm.startyear }}</p>
+                            <p>Length: {{ tvm.length }} minutes</p>
+                            {% if tvm.over18 %}
+                                <p><strong>Over 18 only</strong></p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button class="carousel-control next">&#9654;</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

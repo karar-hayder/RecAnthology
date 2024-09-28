@@ -1,0 +1,122 @@
+@import '../../main/css/variables';
+
+.explore-tvmedia {
+    padding: 2rem 0;
+    background-color: $background-color;
+    color: $text-color;
+    font-family: $font-family;
+
+    .section-title {
+        text-align: center;
+        font-size: 2rem;
+        margin-bottom: 2rem;
+        color: $text-color;
+    }
+
+    .carousel-section {
+        margin-bottom: 2rem;
+
+        .section-heading {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            color: $text-color;
+        }
+
+        .carousel-wrapper {
+            position: relative;
+            overflow: hidden;
+
+            .carousel {
+                display: flex;
+                gap: 1rem;
+                overflow-x: auto;
+                scroll-behavior: smooth;
+                padding: 1rem 0;
+                scroll-snap-type: x mandatory;
+
+                .carousel-item {
+                    flex: 0 0 auto;
+                    width: 200px;
+                    height: 300px;
+                    background-color: #333;
+                    border-radius: $button-border-radius;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                    color: $text-color;
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                    transition: transform 0.3s ease, box-shadow 0.3s ease;
+                    scroll-snap-align: start;
+
+                    img {
+                        max-width: 100%;
+                        border-radius: $button-border-radius;
+                        margin-bottom: 0.5rem;
+                    }
+
+                    h3 {
+                        font-size: 1rem;
+                        margin: 0;
+                    }
+
+                    p {
+                        font-size: 0.875rem;
+                    }
+
+                    &:hover {
+                        transform: scale(1.05);
+                        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+                    }
+                }
+            }
+
+            .carousel-control {
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                background-color: $secondary-color;
+                border: 1px solid $text-color;
+                border-radius: $button-border-radius;
+                padding: 0.5rem;
+                cursor: pointer;
+                z-index: 1;
+                color: $text-color;
+                transition: background-color 0.3s ease;
+
+                &:hover {
+                    background-color: $link-hover-color;
+                    color: $text-color;
+                }
+
+                &.prev {
+                    left: 0;
+                }
+
+                &.next {
+                    right: 0;
+                }
+            }
+        }
+    }
+
+    .genres {
+        .carousel-section {
+            margin-bottom: 2rem;
+        }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .carousel-item {
+            width: calc(200px * 0.75);
+            height: calc(300px * 0.75);
+        }
+
+        .carousel-control {
+            padding: 0.4rem;
+        }
+    }
+}
