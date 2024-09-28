@@ -19,6 +19,7 @@ class TvMedia(models.Model):
     startyear = models.IntegerField("Start year",null=True)
     length = models.PositiveIntegerField("Length in mins",default=0)
     genre = models.ManyToManyField(Genre,related_name="tvmedia")
+    cover_image = models.ImageField("Cover Image", upload_to='moviesNshows_covers/', default='moviesNshows/default_cover.jpg')
 
     def __str__(self) -> str:
         return f"{self.original_title}:{self.length}:{self.startyear} -- {self.id}"
