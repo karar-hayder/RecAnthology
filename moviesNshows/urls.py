@@ -4,7 +4,7 @@ from users.views import RateTvMedia
 
 urlpatterns = [
      #### Main ####
-    path("tvmedia/explore/", views.ExploreTVMediaPage.as_view(), name="explore books"),
+    path("tvmedia/explore/", views.ExploreTVMediaPage.as_view(), name="explore tvmedia"),
 
     #### API ####
     path('api/tvmedia/genres/', API_views.AllGenres.as_view(), name='tvmedia-all-genres'),
