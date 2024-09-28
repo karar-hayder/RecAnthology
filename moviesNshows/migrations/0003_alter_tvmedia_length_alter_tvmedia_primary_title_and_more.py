@@ -20,9 +20,4 @@ class Migration(migrations.Migration):
             name='primary_title',
             field=models.CharField(max_length=500, null=True, verbose_name='Primary title'),
         ),
-        migrations.AlterField(
-            model_name='tvmedia',
-            name='startyear',
-            field=models.DateField(null=True, verbose_name='Start year'),
-        ),
     ]

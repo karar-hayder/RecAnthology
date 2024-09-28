@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
                 ('original_title', models.CharField(max_length=500, verbose_name='Original title')),
                 ('primary_title', models.CharField(max_length=500, verbose_name='Primary title')),
                 ('over18', models.BooleanField(verbose_name='Over 18')),
-                ('startyear', models.DateField(verbose_name='Start year')),
+                ('startyear', models.IntegerField(verbose_name='Start year')),
                 ('length', models.PositiveIntegerField(verbose_name='Length in mins')),
                 ('genres', models.ManyToManyField(related_name='tvmedia', to='moviesNshows.genre')),
             ],
