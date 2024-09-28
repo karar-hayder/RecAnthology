@@ -1,8 +1,10 @@
 from django.urls import path
-from . import API_views
+from . import API_views, views
 from users.views import RateTvMedia
 
 urlpatterns = [
+     #### Main ####
+    path("tvmedia/explore/", views.ExploreTVMediaPage.as_view(), name="explore books"),
 
     #### API ####
     path('api/tvmedia/genres/', API_views.AllGenres.as_view(), name='tvmedia-all-genres'),
