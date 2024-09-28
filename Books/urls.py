@@ -3,7 +3,7 @@ from . import API_views
 from . import views
 
 
-from users.views import RateBook
+from users.API_views import RateBook
 
 urlpatterns = [
     #### Main ####

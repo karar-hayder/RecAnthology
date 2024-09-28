@@ -1,6 +1,6 @@
 from django.urls import path
 from . import API_views, views
-from users.views import RateTvMedia
+from users.API_views import RateTvMedia
 
 urlpatterns = [
      #### Main ####
