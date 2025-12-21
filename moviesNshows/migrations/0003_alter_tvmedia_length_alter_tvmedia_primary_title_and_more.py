@@ -6,18 +6,20 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('moviesNshows', '0002_alter_tvmedia_over18'),
+        ("moviesNshows", "0002_alter_tvmedia_over18"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='tvmedia',
-            name='length',
-            field=models.PositiveIntegerField(default=0, verbose_name='Length in mins'),
+            model_name="tvmedia",
+            name="length",
+            field=models.PositiveIntegerField(default=0, verbose_name="Length in mins"),
         ),
         migrations.AlterField(
-            model_name='tvmedia',
-            name='primary_title',
-            field=models.CharField(max_length=500, null=True, verbose_name='Primary title'),
+            model_name="tvmedia",
+            name="primary_title",
+            field=models.CharField(
+                max_length=500, null=True, verbose_name="Primary title"
+            ),
         ),
     ]

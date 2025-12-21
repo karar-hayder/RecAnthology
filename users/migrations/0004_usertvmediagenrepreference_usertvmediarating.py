@@ -8,33 +8,75 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('moviesNshows', '0005_alter_tvmedia_startyear'),
-        ('users', '0003_userbooksgenrepreference_delete_usergenrepreference'),
+        ("moviesNshows", "0005_alter_tvmedia_startyear"),
+        ("users", "0003_userbooksgenrepreference_delete_usergenrepreference"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='UserTvMediaGenrePreference',
+            name="UserTvMediaGenrePreference",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('preference', models.FloatField()),
-                ('genre', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='moviesNshows.genre')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='media_genre_preferences', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("preference", models.FloatField()),
+                (
+                    "genre",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="moviesNshows.genre",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="media_genre_preferences",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('user', 'genre')},
+                "unique_together": {("user", "genre")},
             },
         ),
         migrations.CreateModel(
-            name='UserTvMediaRating',
+            name="UserTvMediaRating",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('rating', models.IntegerField()),
-                ('tvmedia', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='moviesNshows.tvmedia')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='rated_tvmedia', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("rating", models.IntegerField()),
+                (
+                    "tvmedia",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="moviesNshows.tvmedia",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="rated_tvmedia",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('user', 'tvmedia')},
+                "unique_together": {("user", "tvmedia")},
             },
         ),
     ]

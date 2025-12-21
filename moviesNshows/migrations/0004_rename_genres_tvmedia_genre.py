@@ -6,13 +6,16 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('moviesNshows', '0003_alter_tvmedia_length_alter_tvmedia_primary_title_and_more'),
+        (
+            "moviesNshows",
+            "0003_alter_tvmedia_length_alter_tvmedia_primary_title_and_more",
+        ),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='tvmedia',
-            old_name='genres',
-            new_name='genre',
+            model_name="tvmedia",
+            old_name="genres",
+            new_name="genre",
         ),
     ]

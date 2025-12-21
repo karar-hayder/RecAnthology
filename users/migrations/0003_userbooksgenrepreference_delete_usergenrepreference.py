@@ -8,24 +8,44 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('Books', '0005_rename_genere_book_genre'),
-        ('users', '0002_userbookrating_usergenrepreference'),
+        ("Books", "0005_rename_genere_book_genre"),
+        ("users", "0002_userbookrating_usergenrepreference"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='UserBooksGenrePreference',
+            name="UserBooksGenrePreference",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('preference', models.FloatField()),
-                ('genre', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='Books.genre')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='books_genre_preferences', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("preference", models.FloatField()),
+                (
+                    "genre",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="Books.genre"
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="books_genre_preferences",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('user', 'genre')},
+                "unique_together": {("user", "genre")},
             },
         ),
         migrations.DeleteModel(
-            name='UserGenrePreference',
+            name="UserGenrePreference",
         ),
     ]

@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('Books', '0005_rename_genere_book_genre'),
+        ("Books", "0005_rename_genere_book_genre"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='book',
-            name='cover_image',
-            field=models.ImageField(default='book_covers/default_cover.jpg', upload_to='book_covers/', verbose_name='Cover Image'),
+            model_name="book",
+            name="cover_image",
+            field=models.ImageField(
+                default="book_covers/default_cover.jpg",
+                upload_to="book_covers/",
+                verbose_name="Cover Image",
+            ),
         ),
     ]

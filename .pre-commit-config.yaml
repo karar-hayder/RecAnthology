@@ -1,0 +1,42 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: debug-statements
+
+  - repo: local
+    hooks:
+      - id: black-isort
+        name: black + isort (local)
+        entry: >
+          bash -c "
+            ./.venv/Scripts/python.exe -m isort . &&
+            ./.venv/Scripts/python.exe -m black .
+          "
+        language: system
+        pass_filenames: false
+        always_run: true
+        types: [python]
+
+      - id: flake8
+        name: flake8
+        entry: >
+          bash -c "
+            ./.venv/Scripts/python.exe -m flake8 . -v
+          "
+        language: system
+        types: [python]
+        pass_filenames: false
+        files: ^.*\.py$
+
+      # - id: pytest
+      #   name: Run pytest with coverage
+      #   entry: bash -c './.venv/Scripts/python.exe -m pytest --cov --cov-report=term'
+      #   language: python
+      #   types: [python]
+      #   pass_filenames: false
+      #   files: ^.*\.py$

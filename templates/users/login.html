@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'main/css/form.css' %}">
+    <title>RecAnthlogy | Login</title>
+{% endblock head %}
+
+{% block content %}
+    <div class="login-container">
+        <div class="login-form">
+            <h2>Login</h2>
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="id_username">Username:</label>
+                    <input type="text" id="id_username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="id_password">Password:</label>
+                    <input type="password" id="id_password" name="password" required>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+            {% if form.errors %}
+                <div class="form-errors">
+                    {% for error in form.non_field_errors %}
+                        <p class="error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <div class="register-link">
+                <p>Don't have an account yet? <a href="#">Sign up</a></p>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
