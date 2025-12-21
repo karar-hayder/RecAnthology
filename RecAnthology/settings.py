@@ -20,14 +20,37 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(os.path.join(BASE_DIR, "RecAnthology", "cred.env"))
 
-SECRET_KEY = os.environ["SECRET_KEY"]
+# DOCUMENTATION: Required ENV variables:
+# - SECRET_KEY
+# - DEBUG
+# - ALLOWED_HOSTS (comma-separated, e.g. "localhost,127.0.0.1")
+# - ADMIN_PAGE
+# - DB_NAME
+# - DB_HOST
+# - DB_PORT
+# - DB_USER
+# - DB_PASSWORD
+# - REDIS_URL (optional; defaults to local Redis)
+# NOTE: All secrets must be defined in cred.env or environment.
 
-DEBUG = os.environ["DEBUG"] == "True"
-# DEBUG = False
 
-ALLOWED_HOSTS = [os.environ["ALLOWED_HOSTS"]]
+def get_env(key, default=None, required=True):
+    val = os.environ.get(key, default)
+    if required and val is None:
+        raise RuntimeError(f"Missing REQUIRED environment variable: {key}")
+    return val
 
-ADMIN_PAGE_URL = os.environ["ADMIN_PAGE"]
+
+SECRET_KEY = get_env("SECRET_KEY")
+ADMIN_PAGE_URL = get_env("ADMIN_PAGE")
+
+
+DEBUG = os.environ.get("DEBUG", "False") in ["1", "true", "t"]
+
+
+ALLOWED_HOSTS = [
+    h.strip() for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h.strip()
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -76,14 +99,15 @@ WSGI_APPLICATION = "RecAnthology.wsgi.application"
 
 DATABASES = {
     "default": {
-        "NAME": os.environ["DB_NAME"],
         "ENGINE": "django.db.backends.postgresql",
-        "HOST": os.environ["DB_HOST"],
-        "PORT": os.environ["DB_PORT"],
-        "USER": os.environ["DB_USER"],
-        "PASSWORD": os.environ["DB_PASSWORD"],
+        "NAME": get_env("DB_NAME"),
+        "HOST": get_env("DB_HOST"),
+        "PORT": get_env("DB_PORT"),
+        "USER": get_env("DB_USER"),
+        "PASSWORD": get_env("DB_PASSWORD"),
     }
 }
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -115,9 +139,29 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=2),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
+    "ALGORITHM": "HS256",
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "UPDATE_LAST_LOGIN": True,
+    "SIGNING_KEY": get_env("SECRET_KEY"),
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+    "SLIDING_TOKEN_REFRESH_EXP_CLAIM": "refresh_exp",
+    "SLIDING_TOKEN_LIFETIME": timedelta(hours=2),
+    "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=7),
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/1"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
 }
 
 AUTH_USER_MODEL = "users.CustomUser"
@@ -139,5 +183,8 @@ STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media/")
 
+# Basic security and CSRF settings (add as needed)
+X_FRAME_OPTIONS = "DENY"
+CSRF_COOKIE_SECURE = False  # Set True if using HTTPS
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
