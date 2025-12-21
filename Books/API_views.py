@@ -8,6 +8,7 @@ from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
 from myutils import ExtraTools
+from myutils.ExtraTools import get_cached_or_queryset
 from RecAnthology.custom_throttles import AdminThrottle
 
 from .api.serializers import Book, BookSerializer, Genre, GenreSerializer
@@ -28,13 +29,10 @@ class AllGenres(APIView):
     throttle_classes = [AnonRateThrottle, UserRateThrottle]
 
     def get(self, request):
-        data = cache.get("books_genres")
-        if not data:
-            data = self.serializer(self.model.objects.all(), many=True).data
-            cache.set("books_genres", data, 60 * 60)
-        data = {"data": data}
-
-        return Response(data)
+        data = get_cached_or_queryset(
+            "books_genres", self.model.objects.all(), self.serializer, many=True
+        )
+        return Response({"data": data})
 
 
 class CreateGenre(APIView):
@@ -52,9 +50,10 @@ class CreateGenre(APIView):
                     {"data": self.serializer(in_db.first()).data},
                     status=status.HTTP_200_OK,
                 )
-            new_data = serializer.save()
+            new_genre = serializer.save()
             return Response(
-                {"data": self.serializer(new_data).data}, status=status.HTTP_201_CREATED
+                {"data": self.serializer(new_genre).data},
+                status=status.HTTP_201_CREATED,
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -66,15 +65,13 @@ class AllBooks(APIView):
     throttle_classes = [AnonRateThrottle, UserRateThrottle]
 
     def get(self, request):
-        data = cache.get("all_books")
-        if not data:
-            data = self.serializer(
-                self.model.objects.all().order_by("-likedPercent")[:50], many=True
-            ).data
-            cache.set("all_books", data, 60 * 60)
-        data = {"data": data}
-
-        return Response(data)
+        data = get_cached_or_queryset(
+            "all_books",
+            self.model.objects.all().order_by("-likedPercent")[:50],
+            self.serializer,
+            many=True,
+        )
+        return Response({"data": data})
 
 
 class CreateBook(APIView):
@@ -85,8 +82,8 @@ class CreateBook(APIView):
 
     def post(self, request: Request):
         serializer = self.serializer(data=request.data)
-        self.serializer.gens = request.data.getlist("genre")
-        # print(request.POST)
+        if hasattr(self.serializer, "gens"):
+            self.serializer.gens = request.data.getlist("genre")
         if serializer.is_valid():
             in_db = self.model.objects.filter(**serializer.validated_data)
             if in_db.exists():
@@ -94,9 +91,9 @@ class CreateBook(APIView):
                     {"data": self.serializer(in_db.first()).data},
                     status=status.HTTP_200_OK,
                 )
-            new_data = serializer.save()
+            new_book = serializer.save()
             return Response(
-                {"data": self.serializer(new_data).data}, status=status.HTTP_201_CREATED
+                {"data": self.serializer(new_book).data}, status=status.HTTP_201_CREATED
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -109,10 +106,16 @@ class GetBook(APIView):
 
     def get(self, request, id_query):
         if not id_query:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        query = Q()
-        query &= Q(id__icontains=id_query)
-        return Response({"data": self.serializer(self.model.objects.get(query)).data})
+            return Response(
+                {"error": "Book id is required."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            book = self.model.objects.get(id=id_query)
+        except self.model.DoesNotExist:
+            return Response(
+                {"error": "Book not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+        return Response({"data": self.serializer(book).data})
 
 
 class FilterBooks(APIView):
@@ -122,35 +125,78 @@ class FilterBooks(APIView):
     throttle_classes = [AnonRateThrottle, UserRateThrottle]
 
     def get(self, request):
-        title_query = self.request.GET.get("title")
-        id_query = self.request.GET.get("id")
-        author_query = self.request.GET.get("author")
-        genre_query = self.request.GET.get("genre")
-        likedPercent_query = self.request.GET.get("likedPercent")
+        filters = {}
+        title = request.GET.get("title")
+        book_id = request.GET.get("id")
+        author = request.GET.get("author")
+        genre = request.GET.get("genre")
+        liked_percent = request.GET.get("likedPercent")
+
         query = Q()
+        if title:
+            query &= Q(title__icontains=title)
+        if book_id:
+            query &= Q(id__icontains=book_id)
+        if author:
+            query &= Q(author__icontains=author)
+        if genre:
+            query &= Q(genre__name__icontains=genre)
+        if liked_percent:
+            try:
+                liked_value = int(liked_percent)
+                query &= Q(likedPercent__gte=liked_value)
+            except (ValueError, TypeError):
+                return Response(
+                    {"error": "likedPercent must be an integer."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-        if title_query:
-            query &= Q(title__icontains=title_query)
-        if id_query:
-            query &= Q(id__icontains=id_query)
-        if author_query:
-            query &= Q(author__icontains=author_query)
-        if genre_query:
-            query &= Q(genre__name__icontains=genre_query)
-        if likedPercent_query:
-            query &= Q(likedPercent__gte=int(likedPercent_query))
+        qs = (
+            self.model.objects.filter(query).order_by("-likedPercent")
+            if query
+            else self.model.objects.order_by("-likedPercent")[:50]
+        )
+        serialized = self.serializer(qs, many=True).data
+        return Response({"data": serialized})
 
-        if query:
-            data = self.model.objects.filter(query).order_by("-likedPercent")
-            return Response({"data": self.serializer(data, many=len(data) > 1).data})
-        else:
-            return Response(
-                {
-                    "data": self.serializer(
-                        self.model.objects.order_by("-likedPercent")[:50], many=True
-                    ).data
-                }
+
+def _build_recommendation(
+    needed,
+    max_genres,
+    max_books_per_genre,
+    scale_func,
+    relativity_round=3,
+    default_needed=0,
+):
+    """Core logic reused by both Public and Private recommend endpoints."""
+    # Sort (value, key) by value descending, keep top genres
+    needed_gens = ExtraTools.quickSort([(v, k) for k, v in needed.items()])[::-1][
+        :max_genres
+    ]
+    books_seen = set()
+    suggestions = []
+
+    for rating, genre in needed_gens:
+        related_books = genre.books.all().prefetch_related("genre")[
+            :max_books_per_genre
+        ]
+        for book in related_books:
+            if book.pk in books_seen:
+                continue
+            rt_score = 0
+            book_genres = list(book.genre.all())
+            for g in book_genres:
+                needed_value = needed.get(g, default_needed)
+                rt_score += scale_func(needed_value)
+
+            score = (
+                round(rt_score / (len(book_genres) * 100), relativity_round)
+                if book_genres
+                else 0
             )
+            suggestions.append((score, book))
+            books_seen.add(book.pk)
+    return suggestions
 
 
 class PublicRecommendBooks(APIView):
@@ -158,43 +204,52 @@ class PublicRecommendBooks(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        # Validate request body is a dict of {genre:score}
         needed = request.data
+        if not isinstance(needed, dict):
+            return Response(
+                {"error": "Request must be a dictionary of {genre: value}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         try:
-            needed = {Genre.objects.get(name=key): i for key, i in needed.items()}
+            genre_objs = {
+                Genre.objects.get(name=key): value for key, value in needed.items()
+            }
+        except Genre.DoesNotExist as e:
+            return Response(
+                {"error": f"Genre not found: {e}"},
+                status=status.HTTP_406_NOT_ACCEPTABLE,
+            )
         except Exception as e:
-            return Response(f"{e}", status=status.HTTP_406_NOT_ACCEPTABLE)
-        needed_gens = ExtraTools.quickSort([(j, i) for i, j in needed.items()])[::-1]
-        highest_num = max(needed.values())
-        suggestion = []
-        books = []
-        if len(needed_gens) > 5:
-            needed_gens = needed_gens[:5]
-        for rating, gener in needed_gens:
-            for ind, book in enumerate(gener.books.all()):
-                if ind > 5:
-                    break
-                elif book in books:
-                    continue
+            return Response({"error": str(e)}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
-                rt = 0
-                genres = book.genre.all()
-                for g in genres:
-                    if g not in needed:
-                        needed[g] = 6
-                    rt += ExtraTools.scale(needed[g], (1, 10), (-5, 5)) * 20
+        max_genres = 5
+        max_books = 6  # per genre
 
-                suggestion.append((round(rt / (len(genres) * 100), 1), book))
-                books.append(book)
+        def scale_func(val):
+            # Emulating the old scale: scale val from (1,10) to (-5,5) and *20
+            return ExtraTools.scale(val, (1, 10), (-5, 5)) * 20
 
-        sort = ExtraTools.quickSort(suggestion)[::-1]
-        final_sort = [j for i, j in sort]
-        if len(final_sort) > 100:
-            final_sort = final_sort[:100]
-        data = {}
-        for ind, book in enumerate(BookSerializer(final_sort, many=len(sort) > 1).data):
-            data[str(ind)] = {"relativity": sort[ind][0], "book": book}
+        suggestion = _build_recommendation(
+            genre_objs,
+            max_genres=max_genres,
+            max_books_per_genre=max_books,
+            scale_func=scale_func,
+            relativity_round=1,
+            default_needed=6,
+        )
 
-        return Response({"length": len(final_sort), "data": data})
+        # Sort suggestions by score descending, unique per book
+        sorted_suggestion = sorted(suggestion, key=lambda tup: tup[0], reverse=True)
+        final_books = [b for _, b in sorted_suggestion][:100]
+        relativity_list = [s[0] for s in sorted_suggestion][:100]
+
+        books_data = BookSerializer(final_books, many=True).data
+        response_data = {}
+        for idx, (rel, book_entry) in enumerate(zip(relativity_list, books_data)):
+            response_data[str(idx)] = {"relativity": rel, "book": book_entry}
+
+        return Response({"length": len(final_books), "data": response_data})
 
 
 class PrivateRecommendBooks(APIView):
@@ -204,47 +259,41 @@ class PrivateRecommendBooks(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        cache_key = f"{self.request.user.pk}_tvmedia_recommendation"
+        cache_key = f"{request.user.pk}_book_recommendation"
         data = cache.get(cache_key)
-        if not data:
-            needed: dict = self.request.user.get_books_genre_preferences()
-            if len(needed.keys()) < 1:
-                books = self.model.objects.order_by("-likedPercent")
-                data = self.serializer(books, many=len(books) > 1).data
-                return Response({"length": books.count(), "data": data})
+        if data:
+            return Response({"length": len(data), "data": data})
 
-            needed_gens = ExtraTools.quickSort([(j, i) for i, j in needed.items()])[
-                ::-1
-            ]
-            suggestion = []
-            books = []
-            if len(needed_gens) > 10:
-                needed_gens = needed_gens[:10]
-            for rating, gener in needed_gens:
-                for ind, book in enumerate(gener.books.all()):
-                    if ind > 20:
-                        break
-                    elif book in books:
-                        continue
+        needed = request.user.get_books_genre_preferences()
+        if not needed:
+            books = self.model.objects.order_by("-likedPercent")
+            books_data = self.serializer(books, many=True).data
+            return Response({"length": books.count(), "data": books_data})
 
-                    rt = 0
-                    genres = book.genre.all()
-                    for g in genres:
-                        if g not in needed:
-                            needed[g] = 0
-                        rt += needed[g] * 20
+        max_genres = 10
+        max_books = 21  # allow up to 21 books per genre for private
 
-                    suggestion.append((round(rt / (len(genres) * 100), 3), book))
-                    books.append(book)
+        def scale_func(val):
+            return val * 20
 
-            sort = ExtraTools.quickSort(suggestion)[::-1]
-            final_sort = [j for i, j in sort]
-            if len(final_sort) > 100:
-                final_sort = final_sort[:100]
-            data = {}
-            for ind, book in enumerate(
-                BookSerializer(final_sort, many=len(sort) > 1).data
-            ):
-                data[str(ind)] = {"relativity": sort[ind][0], "book": book}
-            cache.set(cache_key, data, 60 * 60)
-        return Response({"length": len(data), "data": data})
+        suggestion = _build_recommendation(
+            needed,
+            max_genres=max_genres,
+            max_books_per_genre=max_books,
+            scale_func=scale_func,
+            relativity_round=3,
+            default_needed=0,
+        )
+
+        # Sort suggestions, take up to 100
+        sorted_suggestion = sorted(suggestion, key=lambda tup: tup[0], reverse=True)
+        final_books = [b for _, b in sorted_suggestion][:100]
+        relativity_list = [s[0] for s in sorted_suggestion][:100]
+
+        books_data = BookSerializer(final_books, many=True).data
+        response_data = {}
+        for idx, (rel, book_entry) in enumerate(zip(relativity_list, books_data)):
+            response_data[str(idx)] = {"relativity": rel, "book": book_entry}
+
+        cache.set(cache_key, response_data, 60 * 60)
+        return Response({"length": len(response_data), "data": response_data})

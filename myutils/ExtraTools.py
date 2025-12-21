@@ -1,5 +1,7 @@
 import string
 
+from django.core.cache import cache
+
 letters = "ءاأبتثجحخدذرزسشصضطظعغفقكامنهوي" + "123456789" + string.punctuation
 
 letters_indexes = {}
@@ -50,3 +52,26 @@ def scale(x, srcRange, dstRange) -> float:
         + dstRange[0],
         3,
     )
+
+
+def get_cached_or_queryset(
+    cache_key,
+    queryset,
+    serializer_cls=None,
+    many=True,
+    timeout=60 * 60,
+    for_template=False,
+):
+    """
+    Utility to DRY up getting data from cache or DB.
+    If serializer_cls is None or for_template=True, returns the actual queryset instead of serialized data.
+    """
+    data = cache.get(cache_key)
+    if data is None:
+        if serializer_cls and not for_template:
+            data = serializer_cls(queryset, many=many).data
+        else:
+            # For use in template views -- just evaluate the queryset (convert to list to cache)
+            data = list(queryset)
+        cache.set(cache_key, data, timeout)
+    return data
