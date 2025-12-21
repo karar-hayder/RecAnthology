@@ -6,15 +6,31 @@
 {% endblock head %}
 
 {% block content %}
-<section class="welcome-section">
+<section class="welcome-section py-5 bg-light">
     <div class="container">
-        <div class="welcome-content">
-            <h1 class="welcome-title">Discover Your Next Favorite Show</h1>
-            <p class="welcome-description">RecAnthology brings you personalized recommendations and curated lists of Books, TV shows and movies, tailored to your tastes. Start exploring today!</p>
-            <div class="welcome-buttons">
-                <a href="{% url "explore books" %}" class="button">Explore Books</a>
-                <a href="{% url "explore tvmedia" %}" class="button">Explore TV shows and movies</a>
-                <a href="#" class="button button-secondary">Join Us</a>
+        <div class="row justify-content-center align-items-center text-center">
+            <div class="col-lg-8 mx-auto">
+                <h1 class="display-4 fw-bold mb-3 welcome-title">Discover Your Next Favorite Show</h1>
+                <p class="lead mb-4 welcome-description">
+                    RecAnthology brings you personalized recommendations and curated lists of books, TV shows, and movies tailored to your tastes. Start exploring today!
+                </p>
+                <div class="d-flex flex-column flex-md-row justify-content-center gap-3 welcome-buttons mt-4">
+                    <a href="{% url "explore books" %}" class="btn btn-primary btn-lg px-4 shadow">
+                        Explore Books
+                    </a>
+                    <a href="{% url "explore tvmedia" %}" class="btn btn-outline-primary btn-lg px-4 shadow">
+                        Explore TV & Movies
+                    </a>
+                    {% if user.is_authenticated %}
+                        <a href="#" class="btn btn-success btn-lg px-4 shadow" disabled>
+                            Welcome, {{ user.get_full_name|default:user.email }}!
+                        </a>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-secondary btn-lg px-4 shadow">
+                            Join Us
+                        </a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
