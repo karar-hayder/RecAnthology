@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ..models import Genre, TvMedia
+from .models import Genre, TvMedia
 
 
 # serializers.

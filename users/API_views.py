@@ -3,7 +3,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
-from .api.serializers import (
+from .serializers import (
     BookRatingSerializer,
     CustomUser,
     TvMediaRatingSerializer,

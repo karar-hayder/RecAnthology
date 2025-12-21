@@ -11,7 +11,7 @@ from myutils import ExtraTools
 from myutils.ExtraTools import get_cached_or_queryset
 from RecAnthology.custom_throttles import AdminThrottle
 
-from .api.serializers import Book, BookSerializer, Genre, GenreSerializer
+from .serializers import Book, BookSerializer, Genre, GenreSerializer
 
 
 class IndexView(APIView):

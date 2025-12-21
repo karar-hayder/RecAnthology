@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ..models import Book, Genre
+from .models import Book, Genre
 
 
 # serializers.

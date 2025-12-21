@@ -1,9 +1,9 @@
 from rest_framework import serializers
 
-from Books.api.serializers import BookSerializer
-from moviesNshows.api.serializers import TvMediaSerializer
+from Books.serializers import BookSerializer
+from moviesNshows.serializers import TvMediaSerializer
 
-from ..models import (  # BookGenre,; TvGenre,; UserBooksGenrePreference,; UserTvMediaGenrePreference,
+from .models import (  # BookGenre,; TvGenre,; UserBooksGenrePreference,; UserTvMediaGenrePreference,
     Book,
     CustomUser,
     TvMedia,
