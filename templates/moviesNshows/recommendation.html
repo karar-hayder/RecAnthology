@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4 py-md-5">
+    <!-- Top Genre Summary (Via API) -->
+    <div class="row justify-content-center mb-4 mb-lg-5">
+        <div class="col-12 col-lg-10 col-xxl-8">
+            <div class="card border-0 shadow animate__animated animate__fadeInDown bg-white">
+                <div class="card-header bg-transparent pb-0 pt-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="bg-primary bg-opacity-10 rounded-circle p-2 d-inline-flex align-items-center justify-content-center me-2" style="font-size:1.3em;">
+                            <i class="bi bi-bar-chart-steps text-primary"></i>
+                        </span>
+                        <h4 class="card-title mb-0 text-primary fw-semibold fs-5 fs-md-4">
+                            Your Top TV/Movie Genres
+                        </h4>
+                    </div>
+                    <small class="text-muted ms-md-3 mt-2 mt-md-0">Highest preferences shown (1 to 5)</small>
+                </div>
+                <div class="card-body pt-2" id="top-genres-card">
+                    <div id="top-genres-loading" class="text-muted py-2 d-flex align-items-center gap-2 justify-content-center" style="min-height:2.5rem;">
+                        <i class="bi bi-arrow-repeat animate-spin"></i> <span>Loading...</span>
+                    </div>
+                    <div id="top-genres-list" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations (Via API, with Pagination) -->
+    <div class="row justify-content-center mb-2">
+        <div class="col-12 col-lg-10 col-xxl-8">
+            <div class="card border-0 shadow-lg animate__animated animate__fadeInUp bg-white">
+                <div class="card-header bg-transparent pt-3 pb-0 border-0">
+                    <h3 class="card-title mb-2 text-success text-center fs-4">
+                        <i class="bi bi-stars"></i> Recommended Movies &amp; TV Shows
+                    </h3>
+                </div>
+                <div class="card-body px-2 px-md-4 py-3 py-md-4" id="recommendations-card">
+                    <hr class="mb-3">
+                    <div class="alert alert-info d-flex align-items-center gap-2 mb-4" role="alert" id="rate-more-alert">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <span>
+                            Want better recommendations? <a href="{% url 'tvmedia-rate-page' %}" class="alert-link">Rate more movies &amp; TV shows</a> to improve your suggestions!
+                        </span>
+                    </div>
+                    <div id="recommendations-loading" class="text-muted text-center py-4">
+                        <i class="bi bi-arrow-repeat animate-spin" style="font-size:2rem;"></i>
+                        <div>Loading recommendations...</div>
+                    </div>
+                    <div id="recommendations-list" style="display:none;"></div>
+                    <nav aria-label="Recommendation pagination" class="mt-4">
+                        <ul class="pagination justify-content-center mb-0" id="recommendations-pagination"></ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Variables used by recommendation.js (see static/moviesNshows/js/recommendation.js)
+    window.RECOMMENDATION_VARS = {
+        mediaUrl: "{{ MEDIA_URL|escapejs }}",  // used for cover image fallback and static paths
+        userIsAuthenticated: {{ user.is_authenticated|yesno:"true,false" }},
+        recommendPrivateUrl: "{% url 'tvmedia-recommend-private' %}",
+        userGenrePreferencesUrl: "{% url 'user-genre-preferences' %}"
+        // Add more here as needed by JS in the future.
+    };
+</script>
+
+<script src="{% static 'moviesNshows/js/recommendation.js' %}"></script>
+
+<style>
+@keyframes animate-spin {
+    0% { transform: rotate(0deg);}
+    100% { transform: rotate(360deg);}
+}
+.animate-spin {
+    animation: animate-spin 1s linear infinite;
+}
+
+.recommend-cover-wrap img {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+    min-height:135px;
+    border-top-left-radius: .5rem;
+    border-top-right-radius: .5rem;
+}
+@media (max-width: 576px) {
+    .recommend-cover-wrap img {
+        min-height: 80px;
+    }
+}
+.card-title.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+</style>
+{% endblock %}

@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.db import models
+from django.db import models, transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -50,14 +50,20 @@ class CustomUser(AbstractUser):
     def __str__(self) -> str:
         return f"{self.get_full_name()}"
 
+    from django.apps import apps
+    from django.db import transaction
+
     def update_books_genre_preferences(self):
         cache.delete(f"{self.pk}_books_recomendation")
-        UserGenrePreference = apps.get_model("users", "UserBooksGenrePreference")
-        ratings = self.rated_books.all()
+        UserBooksGenrePreference = apps.get_model("users", "UserBooksGenrePreference")
+        ratings = (
+            self.rated_books.select_related("book")
+            .prefetch_related("book__genre")
+            .all()
+        )
         if not ratings.exists():
             return {}
 
-        # Calculate the weighted sum and count of ratings per genre
         genre_ratings = {}
         for rating in ratings:
             for genre in rating.book.genre.all():
@@ -66,24 +72,53 @@ class CustomUser(AbstractUser):
                 genre_ratings[genre]["weighted_sum"] += rating.rating
                 genre_ratings[genre]["count"] += 1
 
-        # Save updated preferences
-        for genre, data in genre_ratings.items():
-            percentage = round(
-                (data["weighted_sum"] / data["count"]) * 10, 2
-            )  # Convert to percentage
-            perf = scale(percentage, (0, 100), (-5, 5))
-            UserGenrePreference.objects.update_or_create(
-                user=self, genre=genre, preference=perf
+        genres_to_update = list(genre_ratings.keys())
+
+        with transaction.atomic():
+            # Fetch all existing prefs for user/these genres
+            existing_prefs = UserBooksGenrePreference.objects.filter(
+                user=self, genre__in=genres_to_update
             )
+            existing_prefs_map = {pref.genre: pref for pref in existing_prefs}
+
+            to_update = []
+            to_create = []
+            for genre, data in genre_ratings.items():
+                # Cap percentage at 100 for safety
+                percentage = min(
+                    round((data["weighted_sum"] / data["count"]) * 10, 2), 100.0
+                )
+                perf = scale(percentage, (0, 100), (-5, 5))
+                if genre in existing_prefs_map:
+                    pref_obj = existing_prefs_map[genre]
+                    if pref_obj.preference != perf:
+                        pref_obj.preference = perf
+                        to_update.append(pref_obj)
+                else:
+                    to_create.append(
+                        UserBooksGenrePreference(
+                            user=self, genre=genre, preference=perf
+                        )
+                    )
+
+            if to_update:
+                UserBooksGenrePreference.objects.bulk_update(to_update, ["preference"])
+            if to_create:
+                UserBooksGenrePreference.objects.bulk_create(to_create)
 
     def update_media_genre_preferences(self):
         cache.delete(f"{self.pk}_tvmedia_recomendation")
-        UserGenrePreference = apps.get_model("users", "UserTvMediaGenrePreference")
-        ratings = self.rated_tvmedia.all()
+        UserTvMediaGenrePreference = apps.get_model(
+            "users", "UserTvMediaGenrePreference"
+        )
+        ratings = (
+            self.rated_tvmedia.select_related("tvmedia")
+            .prefetch_related("tvmedia__genre")
+            .all()
+        )
         if not ratings.exists():
             return {}
 
-        # Calculate the weighted sum and count of ratings per genre
         genre_ratings = {}
         for rating in ratings:
             for genre in rating.tvmedia.genre.all():
@@ -92,15 +127,39 @@ class CustomUser(AbstractUser):
                 genre_ratings[genre]["weighted_sum"] += rating.rating
                 genre_ratings[genre]["count"] += 1
 
-        # Save updated preferences
-        for genre, data in genre_ratings.items():
-            percentage = round(
-                (data["weighted_sum"] / data["count"]) * 10, 2
-            )  # Convert to percentage
-            perf = scale(percentage, (0, 100), (-5, 5))
-            UserGenrePreference.objects.update_or_create(
-                user=self, genre=genre, preference=perf
+        genres_to_update = list(genre_ratings.keys())
+
+        with transaction.atomic():
+            existing_prefs = UserTvMediaGenrePreference.objects.filter(
+                user=self, genre__in=genres_to_update
             )
+            existing_prefs_map = {pref.genre: pref for pref in existing_prefs}
+
+            to_update = []
+            to_create = []
+            for genre, data in genre_ratings.items():
+                percentage = min(
+                    round((data["weighted_sum"] / data["count"]) * 10, 2), 100.0
+                )
+                perf = scale(percentage, (0, 100), (-5, 5))
+                if genre in existing_prefs_map:
+                    pref_obj = existing_prefs_map[genre]
+                    if pref_obj.preference != perf:
+                        pref_obj.preference = perf
+                        to_update.append(pref_obj)
+                else:
+                    to_create.append(
+                        UserTvMediaGenrePreference(
+                            user=self, genre=genre, preference=perf
+                        )
+                    )
+
+            if to_update:
+                UserTvMediaGenrePreference.objects.bulk_update(
+                    to_update, ["preference"]
+                )
+            if to_create:
+                UserTvMediaGenrePreference.objects.bulk_create(to_create)
 
     def get_books_genre_preferences(self):
         return {

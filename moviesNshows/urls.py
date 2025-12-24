@@ -9,6 +9,12 @@ urlpatterns = [
     path(
         "tvmedia/explore/", views.ExploreTVMediaPage.as_view(), name="explore tvmedia"
     ),
+    path("tvmedia/rate/", views.RateTVMediaPage.as_view(), name="tvmedia-rate-page"),
+    path(
+        "tvmedia/recommendations/",
+        views.RecommendationPage.as_view(),
+        name="tvmedia-rec-page",
+    ),
     #### API ####
     path(
         "api/tvmedia/genres/", API_views.AllGenres.as_view(), name="tvmedia-all-genres"

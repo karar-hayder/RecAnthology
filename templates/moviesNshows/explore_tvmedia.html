@@ -57,6 +57,48 @@
     .carousel-card { min-width: 185px; max-width: 185px; }
     .carousel-img { height: 170px; }
 }
+.rate-reco-links {
+    display: flex;
+    gap: 8px;
+    margin-top: 0.5rem;
+}
+.rate-reco-links a {
+    font-size: .95rem;
+    padding: 2px 10px;
+    border-radius: 4px;
+    text-decoration: none;
+    background: #f0f7ff;
+    color: #2057c9;
+    border: 1px solid #d2e5ff;
+    transition: background 0.13s, color 0.13s;
+}
+.rate-reco-links a:hover {
+    background: #2057c9;
+    color: #fff;
+}
+.top-rate-reco-container {
+    display: flex;
+    justify-content: center;
+    gap: 1.2rem;
+    margin-bottom: 2.2rem;
+    margin-top: .7rem;
+}
+.top-rate-reco-container a.btn {
+    font-size: 1.12rem;
+    font-weight: 600;
+    background: #e7f1ff;
+    color: #2057c9;
+    border: 1px solid #b8d3ff;
+    padding: 8px 24px;
+    border-radius: 7px;
+    text-decoration: none;
+    transition: background 0.17s, color 0.14s, box-shadow 0.13s;
+    box-shadow: 0 2px 7px rgba(20,50,130,0.09);
+}
+.top-rate-reco-container a.btn:hover {
+    background: #2057c9;
+    color: #fff;
+}
 </style>
 {% endblock head %}
 
@@ -64,6 +106,25 @@
 <section class="explore-tvmedia py-4 py-md-5">
     <div class="container">
         <h1 class="section-title">Explore TV Media</h1>
+
+        <!-- Rate/Reco Top Buttons -->
+        <div class="top-rate-reco-container">
+            {% if user.is_authenticated %}
+                <a href="{% url 'tvmedia-rate-page' %}" class="btn" title="Go to TV Media Rate page">Rate TV Media</a>
+                <a href="{% url 'tvmedia-rec-page' %}" class="btn" title="Go to TV Media Recommendations">See TV Media Recommendations</a>
+            {% else %}
+                <a
+                  href="{% url 'login' %}?next={% url 'tvmedia-rate-page' %}"
+                  class="btn"
+                  title="Login to Rate TV Media"
+                >Rate TV Media</a>
+                <a
+                  href="{% url 'login' %}?next={% url 'tvmedia-rec-page' %}"
+                  class="btn"
+                  title="Login to See TV Media Recommendations"
+                >See TV Media Recommendations</a>
+            {% endif %}
+        </div>
 
         <!-- Recently Added TV Media -->
         <div class="carousel-section mb-5">

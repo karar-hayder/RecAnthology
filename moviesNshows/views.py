@@ -48,3 +48,58 @@ class ExploreTVMediaPage(TemplateView):
         context["genres_tvmmedia"] = genres_tvmmedia
 
         return context
+
+
+class RateTVMediaPage(TemplateView):
+    template_name = "shared/rating.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user if self.request.user.is_authenticated else None
+        objs = []
+        rated_dict = {}
+        current_ratings = {}
+        rating_numbers = list(range(1, 11))[::-1]  # For stars 1-10
+
+        from users.models import UserTvMediaRating
+
+        if user:
+            # Find tvmedia the user has not rated yet, and current ratings for rated ones
+            rated_qs = UserTvMediaRating.objects.filter(user=user)
+            rated_tvmedia_ids = list(rated_qs.values_list("tvmedia_id", flat=True))
+            # Current ratings for the user's ratings
+            rated_ratings = {u.tvmedia_id: u.rating for u in rated_qs}
+            # Get up to 30 unrated TvMedia, most recently added
+            objs = list(
+                TvMedia.objects.exclude(id__in=rated_tvmedia_ids).order_by(
+                    "-startyear"
+                )[:30]
+            )
+            for obj in objs:
+                if obj.id in rated_ratings:
+                    rated_dict[obj.id] = True
+                    current_ratings[obj.id] = rated_ratings[obj.id]
+                else:
+                    rated_dict[obj.id] = False
+                    current_ratings[obj.id] = None
+        else:
+            # Not authenticated: just show up to 30 by recency, with no rating
+            objs = list(TvMedia.objects.all().order_by("-startyear")[:30])
+            for obj in objs:
+                rated_dict[obj.id] = False
+                current_ratings[obj.id] = None
+
+        context.update(
+            {
+                "object_list": objs,
+                "object_type": "tvmedia",
+                "rated_dict": rated_dict,
+                "current_ratings": current_ratings,
+                "rating_numbers": rating_numbers,
+            }
+        )
+        return context
+
+
+class RecommendationPage(TemplateView):
+    template_name = "moviesNshows/recommendation.html"

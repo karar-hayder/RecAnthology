@@ -131,6 +131,9 @@ class FilterBooks(APIView):
         author = request.GET.get("author")
         genre = request.GET.get("genre")
         liked_percent = request.GET.get("likedPercent")
+        rated = request.GET.get(
+            "rated"
+        )  # expects "true" or "false" (case-insensitive string)
 
         query = Q()
         if title:
@@ -151,12 +154,28 @@ class FilterBooks(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-        qs = (
+        base_qs = (
             self.model.objects.filter(query).order_by("-likedPercent")
             if query
             else self.model.objects.order_by("-likedPercent")[:50]
         )
-        serialized = self.serializer(qs, many=True).data
+
+        # Filter for rated and unrated books for the authenticated user
+        user = request.user if request.user.is_authenticated else None
+        if rated is not None and user is not None:
+            rated_bool = rated.lower() == "true"
+            # Import inside to avoid potential circular import
+            from users.models import UserBookRating
+
+            rated_books_qs = UserBookRating.objects.filter(user=user).values_list(
+                "book_id", flat=True
+            )
+            if rated_bool:
+                base_qs = base_qs.filter(id__in=rated_books_qs)
+            else:
+                base_qs = base_qs.exclude(id__in=rated_books_qs)
+
+        serialized = self.serializer(base_qs, many=True).data
         return Response({"data": serialized})
 
 
