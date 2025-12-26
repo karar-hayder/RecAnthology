@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
-from myutils import ExtraTools
+from myutils import recommendation
 from myutils.ExtraTools import get_cached_or_queryset
 from RecAnthology.custom_throttles import AdminThrottle
 
@@ -183,126 +183,6 @@ class FilterTvMedia(APIView):
         return Response({"data": serialized})
 
 
-####### Recommendation Section ######
-## Move into a better place than views
-def _sort_and_select_top_genres(needed, max_genres, default_needed):
-    """
-    Returns a list of top genres limited to max_genres, sorted by preference.
-    """
-    genre_scores = []
-    for genre, value in needed.items():
-        try:
-            score = float(value)
-        except Exception:
-            score = default_needed
-        genre_scores.append((score, genre))
-    genre_scores.sort(key=lambda tup: tup[0], reverse=True)
-    top_genres = [g for _, g in genre_scores[:max_genres]]
-    return top_genres
-
-
-def _compute_media_rt_score(media, needed, scale_func, default_needed):
-    """
-    Compute the recommendation score for a media based on associated genres and user preferences.
-    """
-    genres = list(media.genre.all())
-    if not genres:
-        return 0, len(genres)
-    rt_score = 0
-    for g in genres:
-        needed_value = needed.get(g, default_needed)
-        try:
-            needed_value = float(needed_value)
-        except Exception:
-            needed_value = default_needed
-        rt_score += scale_func(needed_value)
-    rt_score = max(rt_score, 0)
-    return rt_score, len(genres)
-
-
-def _collect_suggestions_with_scores(
-    top_genres, needed, max_media_per_genre, scale_func, default_needed
-):
-    """
-    For the given top genres, collect unique media and compute their recommendation scores.
-    Returns:
-        tuple (suggestions_with_rtscore, max_rt_score)
-    """
-    media_seen = set()
-    suggestions_with_rtscore = []
-    max_rt_score = 0
-
-    for genre in top_genres:
-        if not hasattr(genre, "tvmedia"):
-            continue  # skip malformed
-        related_qs = genre.tvmedia.all().prefetch_related("genre")[:max_media_per_genre]
-        for media in related_qs:
-            if media.pk in media_seen:
-                continue
-            rt_score, genres_count = _compute_media_rt_score(
-                media, needed, scale_func, default_needed
-            )
-            suggestions_with_rtscore.append((rt_score, media, genres_count))
-            if rt_score > max_rt_score:
-                max_rt_score = rt_score
-            media_seen.add(media.pk)
-    return suggestions_with_rtscore, max_rt_score
-
-
-def _normalize_and_format_suggestions(
-    suggestions_with_rtscore, max_rt_score, relativity_round
-):
-    """
-    Normalize recommendation scores out of 100 and return final list as (score, media).
-    """
-    if max_rt_score == 0:
-        max_rt_score = 1  # avoid division by zero
-    suggestions = []
-    for rt_score, media, genres_count in suggestions_with_rtscore:
-        score = round((rt_score / max_rt_score) * 100, relativity_round)
-        score = min(max(score, 0), 100)
-        suggestions.append((score, media))
-    return suggestions
-
-
-def _build_media_recommendation(
-    needed,
-    max_genres,
-    max_media_per_genre,
-    scale_func,
-    relativity_round=2,
-    default_needed=6,
-):
-    """
-    Generate media recommendations based on user genre preferences.
-
-    Args:
-        needed (dict): {Genre: preference_value}
-        max_genres (int): Max number of genres to use.
-        max_media_per_genre (int): Max media to fetch per genre.
-        scale_func (callable): Function that maps preference_value to weight.
-        relativity_round (int): Decimals for relativity.
-        default_needed (int|float): Fallback preference value.
-
-    Returns:
-        list: [(score, media), ...], where score is out of 100
-    """
-    if not needed:
-        return []
-
-    top_genres = _sort_and_select_top_genres(needed, max_genres, default_needed)
-    suggestions_with_rtscore, max_rt_score = _collect_suggestions_with_scores(
-        top_genres, needed, max_media_per_genre, scale_func, default_needed
-    )
-    suggestions = _normalize_and_format_suggestions(
-        suggestions_with_rtscore, max_rt_score, relativity_round
-    )
-    return suggestions
-
-
-####
-
-
 class PublicRecommendTvMedia(APIView):
     throttle_classes = [AnonRateThrottle, UserRateThrottle]
     permission_classes = [AllowAny]
@@ -405,20 +285,12 @@ class PublicRecommendTvMedia(APIView):
         max_genres = 5
         max_media = 6
 
-        def scale_func(val):
-            try:
-                v = max(1.0, min(10.0, float(val)))
-            except Exception:
-                v = 6.0
-            return ExtraTools.scale(v, (1, 10), (-5, 5)) * 20
-
-        suggestions = _build_media_recommendation(
+        suggestions = recommendation._build_media_recommendation(
             genre_objs,
-            max_genres=max_genres,
+            max_num_genres=max_genres,
             max_media_per_genre=max_media,
-            scale_func=scale_func,
-            relativity_round=1,
-            default_needed=6,
+            relativity_decimals=1,
+            default_preference_score=6,
         )
 
         sorted_suggestions = sorted(suggestions, key=lambda tup: tup[0], reverse=True)
@@ -451,8 +323,8 @@ class PrivateRecommendTvMedia(APIView):
         if isinstance(data, dict):
             return Response({"length": len(data), "data": data})
 
-        needed = request.user.get_media_genre_preferences()
-        if not needed:
+        needed_genres = request.user.get_media_genre_preferences()
+        if not needed_genres:
             # Fallback: latest media.
             tv_media = self.model.objects.order_by("-startyear")[:100]
             media_data = self.serializer(tv_media, many=True).data
@@ -465,19 +337,12 @@ class PrivateRecommendTvMedia(APIView):
         max_genres = 10
         max_media = 21
 
-        def scale_func(val):
-            try:
-                return float(val) * 20
-            except Exception:
-                return 0.0
-
-        suggestions = _build_media_recommendation(
-            needed,
-            max_genres=max_genres,
+        suggestions = recommendation._build_media_recommendation(
+            needed_genres,
+            max_num_genres=max_genres,
             max_media_per_genre=max_media,
-            scale_func=scale_func,
-            relativity_round=4,
-            default_needed=0,
+            relativity_decimals=4,
+            default_preference_score=0,
         )
 
         sorted_suggestions = sorted(suggestions, key=lambda tup: tup[0], reverse=True)

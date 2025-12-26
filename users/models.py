@@ -8,6 +8,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from Books.models import Book
+from Books.models import Genre
 from Books.models import Genre as BookGenre
 from moviesNshows.models import Genre as TvGenre
 from moviesNshows.models import TvMedia
@@ -161,15 +162,15 @@ class CustomUser(AbstractUser):
             if to_create:
                 UserTvMediaGenrePreference.objects.bulk_create(to_create)
 
-    def get_books_genre_preferences(self):
+    def get_books_genre_preferences(self) -> dict[Genre, float]:
         return {
-            pref.genre: pref.preference
+            BookGenre(pref.genre.pk): float(pref.preference)
             for pref in self.books_genre_preferences.order_by("-preference")
         }
 
-    def get_media_genre_preferences(self):
+    def get_media_genre_preferences(self) -> dict[Genre, float]:
         return {
-            pref.genre: pref.preference
+            TvGenre(pref.genre.pk): float(pref.preference)
             for pref in self.media_genre_preferences.order_by("-preference")
         }
 
