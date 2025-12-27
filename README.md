@@ -24,7 +24,6 @@
 * Track user genre preferences based on ratings
 * API endpoints for CRUD operations on users, books, movies, and TV shows
 * Personalized recommendations based on user preferences and feedback
-* Expanded content with over 50k movies and shows, and up to 6k books
 * Added caching for improved performance
 * Comprehensive model testing for error detection
 * Enhanced data validation logic
@@ -32,9 +31,30 @@
 ## Technologies Used
 
 * Backend: Django, Django REST Framework
-* Authentication: JWT (JSON Web Tokens)
-* Database: MariaDB (for production) [SQLite could be used for development by changing some code in settings.py]
-* Frontend: [None at the moment]
+* Authentication: Secure user authentication and authorization with JWT (JSON Web Tokens) and Django authentication
+* Database: PostGreSQL (for production) [SQLite could be used for development by changing some code in settings.py]
+* Frontend: Django templates with Bootstrap 5 (see [`templates/base.html`](templates/base.html))
+
+## Recommendation System Overview
+
+### Content-Based Recommendation
+
+RecAnthology primarily uses a **content-based recommendation** engine that leverages user preferences for genres to suggest books, TV shows, and movies that are most likely to match their tastes.
+
+**How It Works:**
+
+* Users rate media items, and these ratings are used to infer their genre preferences.
+* The system identifies the genres a user favors the most.
+* For each top genre, a set of relevant media is selected (from both books and TV/media, as configured).
+* Recommendation scores are calculated for each media item based on how well its genres align with the user's preferences. Optionally, a custom scoring function can further personalize the scores.
+* Scores are normalized into a 0–100 scale, providing a relativity metric so users see which recommendations are strongest.
+* The final recommendation list is sorted by this relativity score.
+
+See the [RECOMMENDATION-DOC.md](./RECOMMENDATION-DOC.md) for detailed documentation on each function and example usage scenarios.
+
+### Collaborative Filtering
+
+[TODO: Collaborative filtering recommendation system will be added here in the future.]
 
 ## Setup and Installation
 
@@ -42,7 +62,7 @@
 
 * Python 3.12.3 or higher (Not sure but may work on >=3.9)
 * Pipenv (or pip and virtualenv) (RECOMMENDED)
-* Mariadb or any similar SQL server (SQLite3 for development)
+* PostGreSQL or any similar SQL server (SQLite3 for development)
 
 ## Installation
 
@@ -53,41 +73,51 @@ git clone <https://github.com/karar-hayder/RecAnthology.git>
 cd RecAnthology
 ```
 
-* Set up the virtual environment:(RECOMMENDED)
+* Set up the virtual environment (RECOMMENDED):
 
 ### Using Pipenv
 
+#### On Linux / macOS
+
 ```sh
-python3 -m venv venv
-"venv/bin/activate"
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+#### On Windows
+
+```sh
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
 * Configure the database:
 
-### Using MariaDB or similar
+### Using PostGreSQL or similar
 
 * Create a file in RecAnthology where the settings.py is and name it "cred.env"
 * Configure the following variables to your environment:
 
-```text
-SECRET_KEY = ''## "Your secret key"
-DEBUG = True ## Change to False in production
-ALLOWED_HOSTS = ["*"] ## change it in production
-ADMIN_PAGE = "admin/" ## Admin page url change in production
-## If you are using SQL server
-DB_NAME = "[Name]"
-DB_HOST = "localhost" ## Database IP or leave it localhost if it is in the same machine
-DB_PORT = 3306 ## Database Port default is 3306
-DB_USER = "[USER]"
-DB_PASSWORD = "[PASSWORD]"
-DB_COLLATION = "utf8mb4_unicode_ci" ## If you get an error from this delete it from the settings.py
+```env
+SECRET_KEY=your_secret_key_here
+DEBUG=True  # Change to False in production
+ALLOWED_HOSTS=localhost,127.0.0.1  # Comma-separated; change for production
+ADMIN_PAGE=admin/  # Change admin page URL in production
+DB_NAME=your_db_name
+DB_HOST=localhost  # Use database IP or localhost
+DB_PORT=5432  # Default PostGreSQL
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+REDIS_URL=redis://localhost:6379/0  # Optional; defaults to local Redis.
+
 ```
 
 #### Note: you can get a django secret key by using the following command (Remove the 3 from python if you get an error and check you are using the virtual environment)
 
 ```sh
-python3 -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
 ### Using SQlite3
@@ -97,16 +127,12 @@ python3 -c 'from django.core.management.utils import get_random_secret_key; prin
 ```py
 DATABASES = {
     'default': {
-        'NAME':os.environ['DB_NAME'],
-        'ENGINE':'mysql.connector.django',
-        'HOST':os.environ['DB_HOST'],
-        'PORT':os.environ['DB_PORT'],
-        'USER':os.environ['DB_USER'],
-        'PASSWORD':os.environ['DB_PASSWORD'],
-        'OPTIONS': {
-          'autocommit': True,
-          'collation':os.environ['DB_COLLATION']
-        },
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': get_env("DB_NAME"),
+        'HOST': get_env("DB_HOST"),
+        'PORT': get_env("DB_PORT"),
+        'USER': get_env("DB_USER"),
+        'PASSWORD': get_env("DB_PASSWORD"),
     }
 }
 ```
@@ -142,16 +168,6 @@ python manage.py runserver
 ```
 
 ## Usage
-
-### (TODO) Access the API documentation
-
-### Login and obtain a token
-
-#### Use the provided endpoint to authenticate and obtain a JWT token for further requests to the private endpoints
-
-### Interact with the API
-
-#### Use tools like Postman or the REST client in VSCode to interact with the API using the endpoints described below
 
 ## API Endpoints
 

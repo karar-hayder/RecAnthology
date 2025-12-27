@@ -20,19 +20,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(os.path.join(BASE_DIR, "RecAnthology", "cred.env"))
 
-# DOCUMENTATION: Required ENV variables:
-# - SECRET_KEY
-# - DEBUG
-# - ALLOWED_HOSTS (comma-separated, e.g. "localhost,127.0.0.1")
-# - ADMIN_PAGE
-# - DB_NAME
-# - DB_HOST
-# - DB_PORT
-# - DB_USER
-# - DB_PASSWORD
-# - REDIS_URL (optional; defaults to local Redis)
-# NOTE: All secrets must be defined in cred.env or environment.
-
 
 def get_env(key, default=None, required=True):
     val = os.environ.get(key, default)
@@ -45,7 +32,7 @@ SECRET_KEY = get_env("SECRET_KEY")
 ADMIN_PAGE_URL = get_env("ADMIN_PAGE")
 
 
-DEBUG = os.environ.get("DEBUG", "False") in ["1", "true", "t"]
+DEBUG = os.environ.get("DEBUG", "False").lower() in ["1", "true", "t"]
 
 
 ALLOWED_HOSTS = [
