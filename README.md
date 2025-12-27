@@ -2,78 +2,120 @@
 
 ## Table of Contents
 
-* [Introduction](#introduction)
-* [Features](#features)
-* [Technologies Used](#technologies-used)
-* [Setup and Installation](#setup-and-installation)
-* [Usage](#usage)
-* [API Endpoints](#api-endpoints)
-* [Running Tests](#running-tests)
-* [Contributing](#contributing)
-* [License](#license)
-* [Contact](#contact)
+- [RecAnthology](#recanthology)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Core Capabilities](#core-capabilities)
+  - [Technologies Used](#technologies-used)
+  - [System Design \& Architecture](#system-design--architecture)
+    - [Constraints \& Trade-offs](#constraints--trade-offs)
+  - [Recommendation Engine Design](#recommendation-engine-design)
+    - [Content-Based Recommendation](#content-based-recommendation)
+    - [Collaborative Filtering](#collaborative-filtering)
+  - [Setup and Installation](#setup-and-installation)
+    - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+    - [Using Pipenv](#using-pipenv)
+      - [On Linux / macOS](#on-linux--macos)
+      - [On Windows](#on-windows)
+    - [Using PostgreSQL or Equivalent](#using-postgresql-or-equivalent)
+      - [To generate a Django secret key](#to-generate-a-django-secret-key)
+    - [Using SQLite3 (Development Only)](#using-sqlite3-development-only)
+      - [Replace the following code in `settings.py`](#replace-the-following-code-in-settingspy)
+      - [With this configuration](#with-this-configuration)
+  - [Usage](#usage)
+  - [API Endpoints](#api-endpoints)
+  - [Running Tests](#running-tests)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Contact](#contact)
 
 ## Introduction
 
-> RecAnthology (Recommended Anthology) is an intelligent recommendation system designed to curate collections of books, movies, and TV shows based on user preferences. By leveraging advanced algorithms and user feedback, RecAnthology aims to provide personalized recommendations that cater to individual tastes, making the discovery of new content seamless and enjoyable. The latest version includes expanded content, improved performance, and enhanced user management features.
+> RecAnthology (Recommended Anthology) is an intelligent, extensible recommendation platform engineered to curate collections of books, movies, and TV shows tailored to user preferences. Leveraging advanced algorithms and continuous user feedback, RecAnthology delivers personalized, dynamic recommendations that optimize content discovery. The most recent release expands media coverage, maximizes performance via caching, and improves user management for system stability.
 
-## Features
+## Core Capabilities
 
-* User authentication and authorization using JWT
-* Rate books, movies, and TV shows with a rating system
-* Track user genre preferences based on ratings
-* API endpoints for CRUD operations on users, books, movies, and TV shows
-* Personalized recommendations based on user preferences and feedback
-* Added caching for improved performance
-* Comprehensive model testing for error detection
-* Enhanced data validation logic
+- Robust user authentication and authorization powered by JWT
+- Flexible rating system for books, movies, and TV shows
+- Real-time tracking and modeling of user genre preferences
+- Comprehensive API endpoints supporting CRUD operations on users and media assets
+- Adaptive, feedback-driven recommendation algorithms
+- Integrated caching layer for enhanced throughput and latency reduction
+- Automated model testing and error detection
+- Strict data validation pipelines
 
 ## Technologies Used
 
-* Backend: Django, Django REST Framework
-* Authentication: Secure user authentication and authorization with JWT (JSON Web Tokens) and Django authentication
-* Database: PostGreSQL (for production) [SQLite could be used for development by changing some code in settings.py]
-* Frontend: Django templates with Bootstrap 5 (see [`templates/base.html`](templates/base.html))
+- **Backend:** Django, Django REST Framework
+- **Authentication:** JWT and Django authentication modules
+- **Database:** PostgreSQL (production); SQLite as a lightweight development alternative (configurable in `settings.py`)
+- **Frontend:** Django templates using Bootstrap 5 (see [`templates/base.html`](templates/base.html))
 
-## Recommendation System Overview
+## System Design & Architecture
+
+RecAnthology's architecture is modular and designed for scalability, maintainability, and extensibility.
+
+- **API Layer:** Serves all client interactions via RESTful routes.
+- **Authentication:** Stateless JWT ensures secure, scalable user sessions.
+- **Recommendation Engine:** Pluggable, supports both content-based and collaborative filtering modules.
+- **Service Layer:** Encapsulates business logic, data aggregation, scoring, and caching.
+- **Data Layer:** Relational data managed in PostgreSQL, with optional support for Redis-based caching.
+- **Frontend:** Server-rendered templates enable rapid UI prototyping and integration.
+
+### Constraints & Trade-offs
+
+- **Performance vs. Flexibility:** While Django REST and PostgreSQL provide robust scalability, they require careful query optimization for recommendation workloads. SQLite is practical for development but not suited for production scale or concurrent writes.
+- **Real-Time Recommendations:** On-the-fly scoring enhances personalization but introduces higher compute overhead. Background jobs (optional future enhancement) may be leveraged for offline pre-computation at scale.
+- **Caching:** The addition of caching (e.g., Redis) accelerates common queries but demands cache invalidation strategies when user preferences or media data change.
+- **Extensibility:** Modular engine design facilitates new recommendation algorithms but may increase initial development complexity.
+
+## Recommendation Engine Design
 
 ### Content-Based Recommendation
 
-RecAnthology primarily uses a **content-based recommendation** engine that leverages user preferences for genres to suggest books, TV shows, and movies that are most likely to match their tastes.
+RecAnthology implements a **content-based recommendation** engine, aligning users with media selections based on explicit and inferred genre affinities.
 
-**How It Works:**
+**Operational Overview:**
 
-* Users rate media items, and these ratings are used to infer their genre preferences.
-* The system identifies the genres a user favors the most.
-* For each top genre, a set of relevant media is selected (from both books and TV/media, as configured).
-* Recommendation scores are calculated for each media item based on how well its genres align with the user's preferences. Optionally, a custom scoring function can further personalize the scores.
-* Scores are normalized into a 0–100 scale, providing a relativity metric so users see which recommendations are strongest.
-* The final recommendation list is sorted by this relativity score.
+- Users rate media items, directly shaping a user-genre affinity profile.
+- Dominant user genres are dynamically detected and ranked.
+- Media candidates relevant to user profiles are identified from the global content pool.
+- A scoring algorithm evaluates the alignment between item genres and each user, weighting scores optionally with custom logic.
+- Scores are normalized (0–100) for intuitive relativity and transparent system output.
+- The final recommendation list is strictly sorted by these normalized scores.
 
-See the [RECOMMENDATION-DOC.md](./RECOMMENDATION-DOC.md) for detailed documentation on each function and example usage scenarios.
+For comprehensive implementation and advanced usage, refer to [RECOMMENDATION-DOC.md](./RECOMMENDATION-DOC.md).
 
 ### Collaborative Filtering
 
-[TODO: Collaborative filtering recommendation system will be added here in the future.]
+RecAnthology is scheduled to evolve its recommendation engine with **collaborative filtering** capabilities in the next major development cycle. The plan includes:
+
+1. **Data Aggregation**: Capture and anonymize cross-user rating histories for shared affinity modeling.
+2. **Similarity Computation**: Implement user-user and item-item similarity matrices using proven algorithms (e.g., cosine similarity).
+3. **Hybrid Scoring Engine**: Integrate collaborative outputs with the existing content-based system, allowing for hybrid recommendation strategies.
+4. **Performance Optimization**: Profile and optimize for batch computation, including possible offline background jobs.
+5. **A/B Testing & Evaluation**: Deploy collaborative models incrementally and monitor accuracy, coverage, and system resource consumption.
+6. **Documentation & API Exposure**: Update usage guides and API documentation to expose new endpoints and engine capabilities.
 
 ## Setup and Installation
 
 ### Prerequisites
 
-* Python 3.12.3 or higher (Not sure but may work on >=3.9)
-* Pipenv (or pip and virtualenv) (RECOMMENDED)
-* PostGreSQL or any similar SQL server (SQLite3 for development)
+- Python 3.12.3 or newer (should run on >=3.9)
+- Pipenv (or pip and virtualenv) **(RECOMMENDED)**
+- PostgreSQL or any comparable SQL server (SQLite3 supported for development only)
 
 ## Installation
 
-* Clone the repository
+- Clone the repository:
 
 ```sh
 git clone <https://github.com/karar-hayder/RecAnthology.git>
 cd RecAnthology
 ```
 
-* Set up the virtual environment (RECOMMENDED):
+- Set up the virtual environment (recommended):
 
 ### Using Pipenv
 
@@ -93,36 +135,35 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-* Configure the database:
+- Configure the database:
 
-### Using PostGreSQL or similar
+### Using PostgreSQL or Equivalent
 
-* Create a file in RecAnthology where the settings.py is and name it "cred.env"
-* Configure the following variables to your environment:
+- Create a file in the RecAnthology directory (next to `settings.py`) and name it `cred.env`
+- Set the following variables:
 
 ```env
 SECRET_KEY=your_secret_key_here
-DEBUG=True  # Change to False in production
-ALLOWED_HOSTS=localhost,127.0.0.1  # Comma-separated; change for production
-ADMIN_PAGE=admin/  # Change admin page URL in production
+DEBUG=True  # Set to False in production
+ALLOWED_HOSTS=localhost,127.0.0.1  # Comma-separated; update for production deployment
+ADMIN_PAGE=admin/  # Customize admin URL in production environments
 DB_NAME=your_db_name
-DB_HOST=localhost  # Use database IP or localhost
-DB_PORT=5432  # Default PostGreSQL
+DB_HOST=localhost  # DB server IP or localhost
+DB_PORT=5432  # Default for PostgreSQL
 DB_USER=your_db_user
 DB_PASSWORD=your_db_password
-REDIS_URL=redis://localhost:6379/0  # Optional; defaults to local Redis.
-
+REDIS_URL=redis://localhost:6379/0  # Optional. Defaults to local Redis instance.
 ```
 
-#### Note: you can get a django secret key by using the following command (Remove the 3 from python if you get an error and check you are using the virtual environment)
+#### To generate a Django secret key
 
 ```sh
 python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-### Using SQlite3
+### Using SQLite3 (Development Only)
 
-#### Replace the following code
+#### Replace the following code in `settings.py`
 
 ```py
 DATABASES = {
@@ -137,7 +178,7 @@ DATABASES = {
 }
 ```
 
-#### With this
+#### With this configuration
 
 ```py
 DATABASES = {
@@ -148,20 +189,20 @@ DATABASES = {
 }
 ```
 
-* Apply migrations:
+- Apply migrations:
 
 ```sh
 python manage.py migrate
 Create a superuser:
 ```
 
-* Create your admin user account
+- Create your admin user account
 
 ```sh
 python manage.py createsuperuser
 ```
 
-* Run the development server:
+- Launch the development server:
 
 ```sh
 python manage.py runserver
@@ -171,11 +212,11 @@ python manage.py runserver
 
 ## API Endpoints
 
-See [API-DOC.md](./API-DOC.md) for complete documentation of all endpoints.
+The full API documentation, including endpoint specifications and authentication protocols, is provided in [API-DOC.md](./API-DOC.md).
 
 ## Running Tests
 
-### To run the tests, use the following command
+To execute the automated test suite, run:
 
 ```sh
 python manage.py test
@@ -183,22 +224,20 @@ python manage.py test
 
 ## Contributing
 
-* Fork the repository.
-* Create a new branch: git checkout -b feature-branch-name.
-* Make your changes and commit them: git commit -m 'Add some feature'.
-* Push to the branch: git push origin feature-branch-name.
-* Submit a pull request.
+- Fork the repository.
+- Create a new branch: `git checkout -b feature-branch-name`
+- Commit your changes: `git commit -m 'Add some feature'`
+- Push to your branch: `git push origin feature-branch-name`
+- Open a pull request.
 
 ## License
 
-### This project is licensed under the BSD-3-Clause license - see the LICENSE file for details
+This project is released under the BSD-3-Clause license. See the LICENSE file for full details.
 
 ## Contact
 
-### If you have any questions or feedback, feel free to reach out
+For questions or feedback, contact:
 
-#### Name: Karar Haider
-
-#### LinkedIn: [Karar Haider](https://www.linkedin.com/in/karar-haider/)
-
-#### GitHub: [karar-hayder](https://github.com/karar-hayder)
+- **Name:** Karar Haider
+- **LinkedIn:** [Karar Haider](https://www.linkedin.com/in/karar-haider/)
+- **GitHub:** [karar-hayder](https://github.com/karar-hayder)
