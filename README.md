@@ -5,6 +5,7 @@
 - [RecAnthology](#recanthology)
   - [Table of Contents](#table-of-contents)
   - [Introduction](#introduction)
+  - [Project Roadmap](#project-roadmap)
   - [Core Capabilities](#core-capabilities)
   - [Technologies Used](#technologies-used)
   - [System Design \& Architecture](#system-design--architecture)
@@ -33,6 +34,10 @@
 ## Introduction
 
 > RecAnthology (Recommended Anthology) is an intelligent, extensible recommendation platform engineered to curate collections of books, movies, and TV shows tailored to user preferences. Leveraging advanced algorithms and continuous user feedback, RecAnthology delivers personalized, dynamic recommendations that optimize content discovery. The most recent release expands media coverage, maximizes performance via caching, and improves user management for system stability.
+
+## Project Roadmap
+
+For a detailed overview of the project's strategic vision, technical milestones, and long-term trajectory, please refer to the **[ROAD-MAP.md](./ROAD-MAP.md)**.
 
 ## Core Capabilities
 
