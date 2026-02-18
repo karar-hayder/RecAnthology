@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
-from myutils import ExtraTools
+from myutils import ExtraTools, recommendation
 from myutils.ExtraTools import get_cached_or_queryset
 from RecAnthology.custom_throttles import AdminThrottle
 
@@ -284,30 +284,42 @@ class PrivateRecommendBooks(APIView):
             return Response({"length": len(data), "data": data})
 
         needed = request.user.get_books_genre_preferences()
+        use_cf = request.GET.get("cf", "true").lower() == "true"
+        
         if not needed:
             books = self.model.objects.order_by("-likedPercent")
             books_data = self.serializer(books, many=True).data
             return Response({"length": books.count(), "data": books_data})
 
-        max_genres = 10
-        max_books = 21  # allow up to 21 books per genre for private
-
-        def scale_func(val):
-            return val * 20
-
-        suggestion = _build_recommendation(
-            needed,
-            max_genres=max_genres,
-            max_books_per_genre=max_books,
-            scale_func=scale_func,
-            relativity_round=3,
-            default_needed=0,
-        )
-
-        # Sort suggestions, take up to 100
-        sorted_suggestion = sorted(suggestion, key=lambda tup: tup[0], reverse=True)
-        final_books = [b for _, b in sorted_suggestion][:100]
-        relativity_list = [s[0] for s in sorted_suggestion][:100]
+        if use_cf:
+            # Import interaction model locally to avoid circularity if any
+            from users.models import UserBookRating
+            hybrid_results = recommendation.get_hybrid_recommendation(
+                user=request.user,
+                user_needed_genres=needed,
+                interaction_model=UserBookRating,
+                item_model=self.model,
+                item_field="book",
+                top_n=100
+            )
+            final_books = [item for _, item in hybrid_results]
+            relativity_list = [score for score, _ in hybrid_results]
+        else:
+            max_genres = 10
+            max_books = 21
+            def scale_func(val):
+                return val * 20
+            suggestion = _build_recommendation(
+                needed,
+                max_genres=max_genres,
+                max_books_per_genre=max_books,
+                scale_func=scale_func,
+                relativity_round=3,
+                default_needed=0,
+            )
+            sorted_suggestion = sorted(suggestion, key=lambda tup: tup[0], reverse=True)
+            final_books = [b for _, b in sorted_suggestion][:100]
+            relativity_list = [s[0] for s in sorted_suggestion][:100]
 
         books_data = BookSerializer(final_books, many=True).data
         response_data = {}

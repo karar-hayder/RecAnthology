@@ -324,6 +324,8 @@ class PrivateRecommendTvMedia(APIView):
             return Response({"length": len(data), "data": data})
 
         needed_genres = request.user.get_media_genre_preferences()
+        use_cf = request.GET.get("cf", "true").lower() == "true"
+        
         if not needed_genres:
             # Fallback: latest media.
             tv_media = self.model.objects.order_by("-startyear")[:100]
@@ -334,20 +336,33 @@ class PrivateRecommendTvMedia(APIView):
             }
             return Response({"length": len(media_data), "data": response_data})
 
-        max_genres = 10
-        max_media = 21
+        if use_cf:
+            from users.models import UserTvMediaRating
+            hybrid_results = recommendation.get_hybrid_recommendation(
+                user=request.user,
+                user_needed_genres=needed_genres,
+                interaction_model=UserTvMediaRating,
+                item_model=self.model,
+                item_field="tvmedia",
+                top_n=100
+            )
+            final_media = [item for _, item in hybrid_results]
+            relativity_list = [score for score, _ in hybrid_results]
+        else:
+            max_genres = 10
+            max_media = 21
 
-        suggestions = recommendation._build_media_recommendation(
-            needed_genres,
-            max_num_genres=max_genres,
-            max_media_per_genre=max_media,
-            relativity_decimals=4,
-            default_preference_score=0,
-        )
+            suggestions = recommendation._build_media_recommendation(
+                needed_genres,
+                max_num_genres=max_genres,
+                max_media_per_genre=max_media,
+                relativity_decimals=4,
+                default_preference_score=0,
+            )
 
-        sorted_suggestions = sorted(suggestions, key=lambda tup: tup[0], reverse=True)
-        final_media = [b for _, b in sorted_suggestions][:100]
-        relativity_list = [s[0] for s in sorted_suggestions][:100]
+            sorted_suggestions = sorted(suggestions, key=lambda tup: tup[0], reverse=True)
+            final_media = [b for _, b in sorted_suggestions][:100]
+            relativity_list = [s[0] for s in sorted_suggestions][:100]
 
         media_data = self.serializer(final_media, many=True).data
         response_data = {
