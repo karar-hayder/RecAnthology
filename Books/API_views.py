@@ -248,7 +248,6 @@ class PrivateRecommendBooks(APIView):
             return Response({"length": books.count(), "data": books_data})
 
         if use_cf:
-            # Import interaction model locally to avoid circularity if any
             from users.models import UserBookRating
 
             hybrid_results = recommendation.get_hybrid_recommendation(
@@ -259,18 +258,19 @@ class PrivateRecommendBooks(APIView):
                 item_field="book",
                 top_n=100,
             )
-            final_books = [item for _, item in hybrid_results]
+            final_media = [item for _, item in hybrid_results]
             relativity_list = [score for score, _ in hybrid_results]
         else:
             max_genres = 10
             max_books = 21
             suggestions = recommendation.get_content_based_recommendations(
                 user_needed_genres=needed_genres,
-                max_genres=max_genres,
+                max_num_genres=max_genres,
                 max_media_per_genre=max_books,
                 scoring_fn=None,
                 relativity_decimals=1,
                 default_preference_score=6,
+                allowed_types=("books",),
             )
             sorted_suggestion = sorted(
                 suggestions, key=lambda tup: tup[0], reverse=True

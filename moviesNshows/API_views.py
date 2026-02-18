@@ -359,6 +359,7 @@ class PrivateRecommendTvMedia(APIView):
                 max_media_per_genre=max_media,
                 relativity_decimals=4,
                 default_preference_score=0,
+                allowed_types=("tvmedia",),
             )
 
             sorted_suggestions = sorted(
