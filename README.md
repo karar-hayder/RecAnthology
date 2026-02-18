@@ -70,33 +70,31 @@ RecAnthology's architecture is modular and designed for scalability, maintainabi
 - **Caching:** The addition of caching (e.g., Redis) accelerates common queries but demands cache invalidation strategies when user preferences or media data change.
 - **Extensibility:** Modular engine design facilitates new recommendation algorithms but may increase initial development complexity.
 
-## Recommendation Engine Design
+### Recommendation Engine Design
 
-### Content-Based Recommendation
+RecAnthology implements a **hybrid recommendation system**, combining content-based genre affinities with collaborative filtering to deliver highly relevant media suggestions.
 
-RecAnthology implements a **content-based recommendation** engine, aligning users with media selections based on explicit and inferred genre affinities.
+#### Content-Based Recommendation
+
+Aligns users with media based on explicit and inferred genre affinities.
 
 **Operational Overview:**
-
-- Users rate media items, directly shaping a user-genre affinity profile.
+- Users rate media items, shaping a user-genre affinity profile.
 - Dominant user genres are dynamically detected and ranked.
-- Media candidates relevant to user profiles are identified from the global content pool.
-- A scoring algorithm evaluates the alignment between item genres and each user, weighting scores optionally with custom logic.
-- Scores are normalized (0–100) for intuitive relativity and transparent system output.
-- The final recommendation list is strictly sorted by these normalized scores.
+- Media candidates are scored based on their genre alignment with the user's profile.
+- Scores are normalized (0–100) for consistent relativity.
+
+#### Collaborative Filtering
+
+RecAnthology now supports **Item-Item Collaborative Filtering** to discover patterns across the user base.
+
+**Implemented Features:**
+1. **Similarity Computation**: Uses Cosine Similarity to calculate affinity between items based on shared user rating patterns.
+2. **Hybrid Scoring Engine**: Integrates collaborative signals with content-based scores using a weighted merging algorithm.
+3. **Adaptive Results**: Recommendations surface items that "users like you also liked," even if they fall outside your typical genre preferences.
+4. **API Control**: Users can toggle collaborative filtering via API parameters (e.g., `?cf=true`).
 
 For comprehensive implementation and advanced usage, refer to [RECOMMENDATION-DOC.md](./RECOMMENDATION-DOC.md).
-
-### Collaborative Filtering
-
-RecAnthology is scheduled to evolve its recommendation engine with **collaborative filtering** capabilities in the next major development cycle. The plan includes:
-
-1. **Data Aggregation**: Capture and anonymize cross-user rating histories for shared affinity modeling.
-2. **Similarity Computation**: Implement user-user and item-item similarity matrices using proven algorithms (e.g., cosine similarity).
-3. **Hybrid Scoring Engine**: Integrate collaborative outputs with the existing content-based system, allowing for hybrid recommendation strategies.
-4. **Performance Optimization**: Profile and optimize for batch computation, including possible offline background jobs.
-5. **A/B Testing & Evaluation**: Deploy collaborative models incrementally and monitor accuracy, coverage, and system resource consumption.
-6. **Documentation & API Exposure**: Update usage guides and API documentation to expose new endpoints and engine capabilities.
 
 ## Setup and Installation
 

@@ -138,4 +138,58 @@ This section documents the users-related APIs for registering users, authenticat
 }
 ```
 
-## To be Continued with other endpoints after unifying them
+---
+
+#### Recommendation (Hybrid)
+
+**GET** `/books/api/recommend/private/`
+**GET** `/moviesNshows/api/recommend/private/`
+
+- Authenticated endpoint. Returns hybrid recommendations (Content + Collaborative).
+- Optional Query Parameters:
+  - `cf`: String `"true"` or `"false"` (default `"true"`). Toggles collaborative filtering.
+
+**Example response:**
+
+```json
+{
+  "length": 100,
+  "data": {
+    "0": {
+      "relativity": 95.5,
+      "book": { ... }
+    },
+    ...
+  }
+}
+```
+
+---
+
+#### Public Recommendation (Genre-only)
+
+**POST** `/books/api/recommend/public/`
+**POST** `/moviesNshows/api/recommend/public/`
+
+- Open endpoint. Returns recommendations based on a set of genres provided in the body.
+- Body: Dictionary of `{ "GenreName": value }` where value is a score (1-10).
+
+**Example request body:**
+
+```json
+{
+  "Fantasy": 9,
+  "Adventure": 7
+}
+```
+
+---
+
+## Media APIs (Books & TV/Media)
+
+Both modules support standard filtering and retrieval:
+
+- `GET /books/api/all/` / `GET /moviesNshows/api/all/`
+- `GET /books/api/get/<id>/` / `GET /moviesNshows/api/get/<id>/`
+- `GET /books/api/filter/?title=...&genre=...`
+- `GET /moviesNshows/api/filter/?title=...&genre=...&start_year=...`
