@@ -4,12 +4,7 @@ from Books.serializers import BookSerializer
 from moviesNshows.serializers import TvMediaSerializer
 
 from .models import (  # BookGenre,; TvGenre,; UserBooksGenrePreference,; UserTvMediaGenrePreference,
-    Book,
-    CustomUser,
-    TvMedia,
-    UserBookRating,
-    UserTvMediaRating,
-)
+    Book, CustomUser, TvMedia, UserBookRating, UserTvMediaRating)
 
 
 class UserSerializer(serializers.Serializer):

@@ -1,12 +1,7 @@
 from django.contrib import admin
 
-from .models import (
-    CustomUser,
-    UserBookRating,
-    UserBooksGenrePreference,
-    UserTvMediaGenrePreference,
-    UserTvMediaRating,
-)
+from .models import (CustomUser, UserBookRating, UserBooksGenrePreference,
+                     UserTvMediaGenrePreference, UserTvMediaRating)
 
 admin.site.register(CustomUser)
 admin.site.register(UserBooksGenrePreference)

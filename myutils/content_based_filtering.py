@@ -7,7 +7,6 @@ from moviesNshows.models import Genre as TvGenre
 from moviesNshows.models import TvMedia
 
 
-
 def _sort_and_select_top_genres(
     user_genre_prefs: Dict[TvGenre | BookGenre, float],
     max_top_genres: int,
@@ -132,7 +131,10 @@ def get_content_based_recommendations(
     scoring_fn: Callable[[Any, float], float] = None,
     relativity_decimals: int = 2,
     default_preference_score: float = 6,
-    allowed_types: Sequence[str] = ("tvmedia","books",),
+    allowed_types: Sequence[str] = (
+        "tvmedia",
+        "books",
+    ),
 ) -> List[Tuple[float, Any]]:
     """
     Generate media (or book) recommendations based on user genre preferences.

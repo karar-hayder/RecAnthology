@@ -241,7 +241,7 @@ class PrivateRecommendBooks(APIView):
 
         needed_genres = request.user.get_books_genre_preferences()
         use_cf = request.GET.get("cf", "true").lower() == "true"
-        
+
         if not needed_genres:
             books = self.model.objects.order_by("-likedPercent")
             books_data = self.serializer(books, many=True).data
@@ -250,13 +250,14 @@ class PrivateRecommendBooks(APIView):
         if use_cf:
             # Import interaction model locally to avoid circularity if any
             from users.models import UserBookRating
+
             hybrid_results = recommendation.get_hybrid_recommendation(
                 user=request.user,
                 user_needed_genres=needed_genres,
                 interaction_model=UserBookRating,
                 item_model=self.model,
                 item_field="book",
-                top_n=100
+                top_n=100,
             )
             final_books = [item for _, item in hybrid_results]
             relativity_list = [score for score, _ in hybrid_results]
@@ -264,14 +265,16 @@ class PrivateRecommendBooks(APIView):
             max_genres = 10
             max_books = 21
             suggestions = recommendation.get_content_based_recommendations(
-            user_needed_genres=needed_genres,
-            max_genres=max_genres,
-            max_media_per_genre=max_books,
-            scoring_fn=None,
-            relativity_decimals=1,
-            default_preference_score=6,
-        )
-            sorted_suggestion = sorted(suggestions, key=lambda tup: tup[0], reverse=True)
+                user_needed_genres=needed_genres,
+                max_genres=max_genres,
+                max_media_per_genre=max_books,
+                scoring_fn=None,
+                relativity_decimals=1,
+                default_preference_score=6,
+            )
+            sorted_suggestion = sorted(
+                suggestions, key=lambda tup: tup[0], reverse=True
+            )
             final_media = [b for _, b in sorted_suggestion][:100]
             relativity_list = [s[0] for s in sorted_suggestion][:100]
 
