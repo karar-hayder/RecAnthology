@@ -1,6 +1,9 @@
+import re
+from collections import OrderedDict
+
 from django.core.cache import cache
 from django.db.models import Q
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -8,6 +11,7 @@ from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
 from myutils import ExtraTools, recommendation
+from myutils.api_mixins import BaseCRUDMixin, RecommendationMixin
 from myutils.ExtraTools import get_cached_or_queryset
 from RecAnthology.custom_throttles import AdminThrottle
 
@@ -22,40 +26,24 @@ class IndexView(APIView):
         return Response("OK")
 
 
-class AllGenres(APIView):
+class AllGenres(BaseCRUDMixin, APIView):
     permission_classes = [AllowAny]
     model = Genre
     serializer = GenreSerializer
     throttle_classes = [AnonRateThrottle, UserRateThrottle]
 
     def get(self, request):
-        data = get_cached_or_queryset(
-            "books_genres", self.model.objects.all(), self.serializer, many=True
-        )
-        return Response({"data": data})
+        return self.handle_list("books_genres")
 
 
-class CreateGenre(APIView):
+class CreateGenre(BaseCRUDMixin, APIView):
     model = Genre
     serializer = GenreSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
     throttle_classes = [AdminThrottle]
 
     def post(self, request):
-        serializer = self.serializer(data=request.data)
-        if serializer.is_valid():
-            in_db = self.model.objects.filter(**serializer.validated_data)
-            if in_db.exists():
-                return Response(
-                    {"data": self.serializer(in_db.first()).data},
-                    status=status.HTTP_200_OK,
-                )
-            new_genre = serializer.save()
-            return Response(
-                {"data": self.serializer(new_genre).data},
-                status=status.HTTP_201_CREATED,
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.handle_create(request)
 
 
 class AllBooks(APIView):
@@ -179,109 +167,33 @@ class FilterBooks(APIView):
         return Response({"data": serialized})
 
 
-class PublicRecommendBooks(APIView):
-    throttle_classes = [AnonRateThrottle, UserRateThrottle]
+class PublicRecommendBooks(RecommendationMixin, APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
+    model = Book
+    serializer = BookSerializer
+    item_type_key = "book"
+    allowed_types = ("books",)
 
     def post(self, request):
-        # Validate request body is a dict of {genre:score}
-        needed = request.data
-        if not isinstance(needed, dict):
-            return Response(
-                {"error": "Request must be a dictionary of {genre: value}."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        try:
-            genre_objs = {
-                Genre.objects.get(name=key): value for key, value in needed.items()
-            }
-        except Genre.DoesNotExist as e:
-            return Response(
-                {"error": f"Genre not found: {e}"},
-                status=status.HTTP_406_NOT_ACCEPTABLE,
-            )
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_406_NOT_ACCEPTABLE)
-
-        max_genres = 5
-        max_books = 6  # per genre
-
-        suggestions = recommendation.get_content_based_recommendations(
-            user_needed_genres=genre_objs,
-            max_genres=max_genres,
-            max_media_per_genre=max_books,
-            scoring_fn=None,
-            relativity_decimals=1,
-            default_preference_score=6,
-        )
-
-        sorted_suggestions = sorted(suggestions, key=lambda tup: tup[0], reverse=True)
-        final_media = [m for _, m in sorted_suggestions][:100]
-        relativity_list = [s[0] for s in sorted_suggestions][:100]
-
-        books_data = BookSerializer(final_media, many=True).data
-        response_data = {}
-        for idx, (rel, book_entry) in enumerate(zip(relativity_list, books_data)):
-            response_data[str(idx)] = {"relativity": rel, "book": book_entry}
-
-        return Response({"length": len(final_media), "data": response_data})
+        return self.handle_public_recommendation(request, Genre)
 
 
-class PrivateRecommendBooks(APIView):
+class PrivateRecommendBooks(RecommendationMixin, APIView):
     throttle_classes = [UserRateThrottle]
     model = Book
     serializer = BookSerializer
     permission_classes = [IsAuthenticated]
+    item_type_key = "book"
+    allowed_types = ("books",)
 
     def get(self, request):
-        cache_key = f"{request.user.pk}_book_recommendation"
-        data = cache.get(cache_key)
-        if data:
-            return Response({"length": len(data), "data": data})
+        from users.models import UserBookRating
 
-        needed_genres = request.user.get_books_genre_preferences()
-        use_cf = request.GET.get("cf", "true").lower() == "true"
-
-        if not needed_genres:
-            books = self.model.objects.order_by("-likedPercent")
-            books_data = self.serializer(books, many=True).data
-            return Response({"length": books.count(), "data": books_data})
-
-        if use_cf:
-            from users.models import UserBookRating
-
-            hybrid_results = recommendation.get_hybrid_recommendation(
-                user=request.user,
-                user_needed_genres=needed_genres,
-                interaction_model=UserBookRating,
-                item_model=self.model,
-                item_field="book",
-                top_n=100,
-            )
-            final_media = [item for _, item in hybrid_results]
-            relativity_list = [score for score, _ in hybrid_results]
-        else:
-            max_genres = 10
-            max_books = 21
-            suggestions = recommendation.get_content_based_recommendations(
-                user_needed_genres=needed_genres,
-                max_num_genres=max_genres,
-                max_media_per_genre=max_books,
-                scoring_fn=None,
-                relativity_decimals=1,
-                default_preference_score=6,
-                allowed_types=("books",),
-            )
-            sorted_suggestion = sorted(
-                suggestions, key=lambda tup: tup[0], reverse=True
-            )
-            final_media = [b for _, b in sorted_suggestion][:100]
-            relativity_list = [s[0] for s in sorted_suggestion][:100]
-
-        books_data = BookSerializer(final_media, many=True).data
-        response_data = {}
-        for idx, (rel, book_entry) in enumerate(zip(relativity_list, books_data)):
-            response_data[str(idx)] = {"relativity": rel, "book": book_entry}
-
-        cache.set(cache_key, response_data, 60 * 60)
-        return Response({"length": len(response_data), "data": response_data})
+        return self.handle_private_recommendation(
+            request=request,
+            genre_prefs_fn=request.user.get_books_genre_preferences,
+            interaction_model=UserBookRating,
+            item_field="book",
+            cache_key=f"{request.user.pk}_book_recommendation",
+        )
