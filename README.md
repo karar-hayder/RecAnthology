@@ -193,7 +193,6 @@ DATABASES = {
 
 ```sh
 python manage.py migrate
-Create a superuser:
 ```
 
 - Create your admin user account

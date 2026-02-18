@@ -179,45 +179,6 @@ class FilterBooks(APIView):
         return Response({"data": serialized})
 
 
-def _build_recommendation(
-    needed,
-    max_genres,
-    max_books_per_genre,
-    scale_func,
-    relativity_round=3,
-    default_needed=0,
-):
-    """Core logic reused by both Public and Private recommend endpoints."""
-    # Sort (value, key) by value descending, keep top genres
-    needed_gens = ExtraTools.quickSort([(v, k) for k, v in needed.items()])[::-1][
-        :max_genres
-    ]
-    books_seen = set()
-    suggestions = []
-
-    for rating, genre in needed_gens:
-        related_books = genre.books.all().prefetch_related("genre")[
-            :max_books_per_genre
-        ]
-        for book in related_books:
-            if book.pk in books_seen:
-                continue
-            rt_score = 0
-            book_genres = list(book.genre.all())
-            for g in book_genres:
-                needed_value = needed.get(g, default_needed)
-                rt_score += scale_func(needed_value)
-
-            score = (
-                round(rt_score / (len(book_genres) * 100), relativity_round)
-                if book_genres
-                else 0
-            )
-            suggestions.append((score, book))
-            books_seen.add(book.pk)
-    return suggestions
-
-
 class PublicRecommendBooks(APIView):
     throttle_classes = [AnonRateThrottle, UserRateThrottle]
     permission_classes = [AllowAny]
@@ -245,30 +206,25 @@ class PublicRecommendBooks(APIView):
         max_genres = 5
         max_books = 6  # per genre
 
-        def scale_func(val):
-            # Emulating the old scale: scale val from (1,10) to (-5,5) and *20
-            return ExtraTools.scale(val, (1, 10), (-5, 5)) * 20
-
-        suggestion = _build_recommendation(
-            genre_objs,
+        suggestions = recommendation.get_content_based_recommendations(
+            user_needed_genres=genre_objs,
             max_genres=max_genres,
-            max_books_per_genre=max_books,
-            scale_func=scale_func,
-            relativity_round=1,
-            default_needed=6,
+            max_media_per_genre=max_books,
+            scoring_fn=None,
+            relativity_decimals=1,
+            default_preference_score=6,
         )
 
-        # Sort suggestions by score descending, unique per book
-        sorted_suggestion = sorted(suggestion, key=lambda tup: tup[0], reverse=True)
-        final_books = [b for _, b in sorted_suggestion][:100]
-        relativity_list = [s[0] for s in sorted_suggestion][:100]
+        sorted_suggestions = sorted(suggestions, key=lambda tup: tup[0], reverse=True)
+        final_media = [m for _, m in sorted_suggestions][:100]
+        relativity_list = [s[0] for s in sorted_suggestions][:100]
 
-        books_data = BookSerializer(final_books, many=True).data
+        books_data = BookSerializer(final_media, many=True).data
         response_data = {}
         for idx, (rel, book_entry) in enumerate(zip(relativity_list, books_data)):
             response_data[str(idx)] = {"relativity": rel, "book": book_entry}
 
-        return Response({"length": len(final_books), "data": response_data})
+        return Response({"length": len(final_media), "data": response_data})
 
 
 class PrivateRecommendBooks(APIView):
@@ -283,10 +239,10 @@ class PrivateRecommendBooks(APIView):
         if data:
             return Response({"length": len(data), "data": data})
 
-        needed = request.user.get_books_genre_preferences()
+        needed_genres = request.user.get_books_genre_preferences()
         use_cf = request.GET.get("cf", "true").lower() == "true"
         
-        if not needed:
+        if not needed_genres:
             books = self.model.objects.order_by("-likedPercent")
             books_data = self.serializer(books, many=True).data
             return Response({"length": books.count(), "data": books_data})
@@ -296,7 +252,7 @@ class PrivateRecommendBooks(APIView):
             from users.models import UserBookRating
             hybrid_results = recommendation.get_hybrid_recommendation(
                 user=request.user,
-                user_needed_genres=needed,
+                user_needed_genres=needed_genres,
                 interaction_model=UserBookRating,
                 item_model=self.model,
                 item_field="book",
@@ -307,21 +263,19 @@ class PrivateRecommendBooks(APIView):
         else:
             max_genres = 10
             max_books = 21
-            def scale_func(val):
-                return val * 20
-            suggestion = _build_recommendation(
-                needed,
-                max_genres=max_genres,
-                max_books_per_genre=max_books,
-                scale_func=scale_func,
-                relativity_round=3,
-                default_needed=0,
-            )
-            sorted_suggestion = sorted(suggestion, key=lambda tup: tup[0], reverse=True)
-            final_books = [b for _, b in sorted_suggestion][:100]
+            suggestions = recommendation.get_content_based_recommendations(
+            user_needed_genres=needed_genres,
+            max_genres=max_genres,
+            max_media_per_genre=max_books,
+            scoring_fn=None,
+            relativity_decimals=1,
+            default_preference_score=6,
+        )
+            sorted_suggestion = sorted(suggestions, key=lambda tup: tup[0], reverse=True)
+            final_media = [b for _, b in sorted_suggestion][:100]
             relativity_list = [s[0] for s in sorted_suggestion][:100]
 
-        books_data = BookSerializer(final_books, many=True).data
+        books_data = BookSerializer(final_media, many=True).data
         response_data = {}
         for idx, (rel, book_entry) in enumerate(zip(relativity_list, books_data)):
             response_data[str(idx)] = {"relativity": rel, "book": book_entry}

@@ -285,8 +285,8 @@ class PublicRecommendTvMedia(APIView):
         max_genres = 5
         max_media = 6
 
-        suggestions = recommendation._build_media_recommendation(
-            genre_objs,
+        suggestions = recommendation.get_content_based_recommendations(
+            user_needed_genres=genre_objs,
             max_num_genres=max_genres,
             max_media_per_genre=max_media,
             relativity_decimals=1,
@@ -294,7 +294,7 @@ class PublicRecommendTvMedia(APIView):
         )
 
         sorted_suggestions = sorted(suggestions, key=lambda tup: tup[0], reverse=True)
-        final_media = [b for _, b in sorted_suggestions][:100]
+        final_media = [m for _, m in sorted_suggestions][:100]
         relativity_list = [s[0] for s in sorted_suggestions][:100]
 
         media_data = TvMediaSerializer(final_media, many=True).data
@@ -352,7 +352,7 @@ class PrivateRecommendTvMedia(APIView):
             max_genres = 10
             max_media = 21
 
-            suggestions = recommendation._build_media_recommendation(
+            suggestions = recommendation.get_content_based_recommendations(
                 needed_genres,
                 max_num_genres=max_genres,
                 max_media_per_genre=max_media,
