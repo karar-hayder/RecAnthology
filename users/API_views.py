@@ -4,9 +4,14 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
-from .serializers import (BookRatingSerializer, CustomUser,
-                          TvMediaRatingSerializer, UserBookRating,
-                          UserSerializer, UserTvMediaRating)
+from .serializers import (
+    BookRatingSerializer,
+    CustomUser,
+    TvMediaRatingSerializer,
+    UserBookRating,
+    UserSerializer,
+    UserTvMediaRating,
+)
 
 # Create your views here.
 

@@ -11,8 +11,12 @@ from Books.models import Genre as BookGenre
 from moviesNshows.models import Genre as TvGenre
 from moviesNshows.models import TvMedia
 from myutils.ExtraTools import scale
-from users.models import (CustomUser, UserBookRating,
-                          UserTvMediaGenrePreference, UserTvMediaRating)
+from users.models import (
+    CustomUser,
+    UserBookRating,
+    UserTvMediaGenrePreference,
+    UserTvMediaRating,
+)
 
 
 class UserTvMediaRatingTestCase(TestCase):

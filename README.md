@@ -10,9 +10,9 @@
   - [Technologies Used](#technologies-used)
   - [System Design \& Architecture](#system-design--architecture)
     - [Constraints \& Trade-offs](#constraints--trade-offs)
-  - [Recommendation Engine Design](#recommendation-engine-design)
-    - [Content-Based Recommendation](#content-based-recommendation)
-    - [Collaborative Filtering](#collaborative-filtering)
+    - [Recommendation Engine Design](#recommendation-engine-design)
+      - [Content-Based Recommendation](#content-based-recommendation)
+      - [Collaborative Filtering](#collaborative-filtering)
   - [Setup and Installation](#setup-and-installation)
     - [Prerequisites](#prerequisites)
   - [Installation](#installation)
@@ -84,6 +84,7 @@ RecAnthology implements a **hybrid recommendation system**, combining content-ba
 Aligns users with media based on explicit and inferred genre affinities.
 
 **Operational Overview:**
+
 - Users rate media items, shaping a user-genre affinity profile.
 - Dominant user genres are dynamically detected and ranked.
 - Media candidates are scored based on their genre alignment with the user's profile.
@@ -94,6 +95,7 @@ Aligns users with media based on explicit and inferred genre affinities.
 RecAnthology now supports **Item-Item Collaborative Filtering** to discover patterns across the user base.
 
 **Implemented Features:**
+
 1. **Similarity Computation**: Uses Cosine Similarity to calculate affinity between items based on shared user rating patterns.
 2. **Hybrid Scoring Engine**: Integrates collaborative signals with content-based scores using a weighted merging algorithm.
 3. **Adaptive Results**: Recommendations surface items that "users like you also liked," even if they fall outside your typical genre preferences.
@@ -114,7 +116,7 @@ For comprehensive implementation and advanced usage, refer to [RECOMMENDATION-DO
 - Clone the repository:
 
 ```sh
-git clone <https://github.com/karar-hayder/RecAnthology.git>
+git clone https://github.com/karar-hayder/RecAnthology.git
 cd RecAnthology
 ```
 

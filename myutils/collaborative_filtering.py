@@ -1,8 +1,8 @@
 import math
 from collections import defaultdict
-from typing import Any, Dict, List, Set, Tuple, Type
+from typing import Any, Dict, List, Tuple, Type
 
-from django.db.models import Model, QuerySet
+from django.db.models import Model
 
 
 def calculate_cosine_similarity(

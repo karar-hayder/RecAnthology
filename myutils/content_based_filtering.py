@@ -1,4 +1,3 @@
-from collections import defaultdict
 from typing import Any, Callable, Dict, List, Literal, Sequence, Tuple, Union
 
 from Books.models import Book

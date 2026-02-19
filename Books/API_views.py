@@ -1,16 +1,11 @@
-import re
-from collections import OrderedDict
-
-from django.core.cache import cache
 from django.db.models import Q
-from rest_framework import serializers, status
+from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
-from myutils import ExtraTools, recommendation
 from myutils.api_mixins import BaseCRUDMixin, RecommendationMixin
 from myutils.ExtraTools import get_cached_or_queryset
 from RecAnthology.custom_throttles import AdminThrottle
@@ -113,7 +108,6 @@ class FilterBooks(APIView):
     throttle_classes = [AnonRateThrottle, UserRateThrottle]
 
     def get(self, request):
-        filters = {}
         title = request.GET.get("title")
         book_id = request.GET.get("id")
         author = request.GET.get("author")

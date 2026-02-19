@@ -1,9 +1,11 @@
 from django.test import TestCase
 
 from Books.models import Book, Genre
-from myutils.collaborative_filtering import (calculate_cosine_similarity,
-                                             get_collaborative_recommendations,
-                                             get_item_similarities)
+from myutils.collaborative_filtering import (
+    calculate_cosine_similarity,
+    get_collaborative_recommendations,
+    get_item_similarities,
+)
 from myutils.recommendation import get_hybrid_recommendation
 from users.models import CustomUser, UserBookRating
 

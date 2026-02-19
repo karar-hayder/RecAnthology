@@ -1,10 +1,8 @@
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Literal, Sequence, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
-from Books.models import Book
 from Books.models import Genre as BookGenre
 from moviesNshows.models import Genre as TvGenre
-from moviesNshows.models import TvMedia
 
 from .collaborative_filtering import get_collaborative_recommendations
 from .content_based_filtering import get_content_based_recommendations

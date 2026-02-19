@@ -3,9 +3,10 @@
 ## Overview
 
 The recommendation system is modularized into three main components:
-1.  **Hybrid Logic (`myutils/recommendation.py`)**: The primary entry point that combines results.
-2.  **Content-Based Filtering (`myutils/content_based_filtering.py`)**: Logic based on user genre preferences.
-3.  **Collaborative Filtering (`myutils/collaborative_filtering.py`)**: Logic based on user-item interaction patterns.
+
+1. **Hybrid Logic (`myutils/recommendation.py`)**: The primary entry point that combines results.
+2. **Content-Based Filtering (`myutils/content_based_filtering.py`)**: Logic based on user genre preferences.
+3. **Collaborative Filtering (`myutils/collaborative_filtering.py`)**: Logic based on user-item interaction patterns.
 
 ---
 

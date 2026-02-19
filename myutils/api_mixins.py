@@ -1,6 +1,6 @@
 import re
 from collections import OrderedDict
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, Type
 
 from django.core.cache import cache
 from rest_framework import serializers, status
