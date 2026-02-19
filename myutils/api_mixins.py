@@ -3,6 +3,7 @@ from collections import OrderedDict
 from typing import Any, Dict, Type
 
 from django.core.cache import cache
+from django.db.models import Model
 from rest_framework import serializers, status
 from rest_framework.response import Response
 
@@ -28,8 +29,8 @@ class RecommendationMixin:
     - allowed_types: tuple of types for the rec engine (e.g., ('books',))
     """
 
-    model: Any = None
-    serializer: Any = None
+    model: Model | None = None
+    serializer: serializers.Serializer | None = None
     item_type_key: str = "item"
     allowed_types: tuple = ("books",)
 
@@ -170,7 +171,6 @@ class RecommendationMixin:
                 item_model=self.model,
                 item_field=item_field,
                 top_n=100,
-                allowed_types=getattr(self, "allowed_types", ("books",)),
             )
             final_media = [item for _, item in hybrid_results]
             relativity_list = [score for score, _ in hybrid_results]
@@ -208,7 +208,7 @@ class BaseCRUDMixin:
     """
 
     model: Any = None
-    serializer: Any = None
+    serializer: serializers.Serializer = None
 
     def handle_list(self, cache_key: str, timeout: int = 3600) -> Response:
         data = get_cached_or_queryset(
