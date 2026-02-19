@@ -1,9 +1,24 @@
-from typing import Any, Callable, Dict, List, Literal, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
+)
+
+from django.db.models import Model
 
 from Books.models import Book
 from Books.models import Genre as BookGenre
 from moviesNshows.models import Genre as TvGenre
 from moviesNshows.models import TvMedia
+
+from .feature_signals import compute_signal_bonus
 
 
 def _sort_and_select_top_genres(
@@ -134,6 +149,9 @@ def get_content_based_recommendations(
         "tvmedia",
         "books",
     ),
+    user: Optional[Any] = None,
+    interaction_model: Optional[Type[Model]] = None,
+    item_field: Optional[str] = None,
 ) -> List[Tuple[float, Any]]:
     """
     Generate media (or book) recommendations based on user genre preferences.
@@ -145,7 +163,10 @@ def get_content_based_recommendations(
         scoring_fn (callable|None): Function to score a user preference (optional).
         relativity_decimals (int): Decimal places for relativity scoring.
         default_preference_score (int|float): Default score to use if preference is missing.
-        allowed_types (tuple|list): Allowed related_names for objects ('tvmedia', 'books'), default just 'tvmedia'.
+        allowed_types (tuple|list): Allowed related_names for objects ('tvmedia', 'books').
+        user: The requesting user (for feature signal computation).
+        interaction_model: Rating model class (for feature signal computation).
+        item_field: FK field name ('book' or 'tvmedia').
 
     Returns:
         list of tuples: [(relativity_score (0-100), media_obj), ...]
@@ -164,7 +185,23 @@ def get_content_based_recommendations(
         float(default_preference_score),
         allowed_types=allowed_types,
     )
+
+    # Apply feature signal bonuses to each candidate
+    enriched_candidates: List[Tuple[float, Any, int]] = []
+    for raw_score, media_obj, genre_count in media_score_candidates:
+        bonus = compute_signal_bonus(
+            item=media_obj,
+            user=user,
+            interaction_model=interaction_model,
+            item_field=item_field
+            or ("book" if "books" in allowed_types else "tvmedia"),
+        )
+        enriched_candidates.append((float(raw_score) + bonus, media_obj, genre_count))
+
+    # Adjust max score to include possible bonus
+    adjusted_max = float(greatest_score) + 30.0 if greatest_score > 0 else 1.0
+
     final_suggestions: List[Tuple[float, Any]] = _normalize_and_format_scores(
-        media_score_candidates, float(greatest_score), int(relativity_decimals)
+        enriched_candidates, adjusted_max, int(relativity_decimals)
     )
     return final_suggestions

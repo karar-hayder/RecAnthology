@@ -2,7 +2,15 @@
 
 ## The Vision
 
-RecAnthology (Recommended Anthology) is an intelligent, extensible recommendation platform designed to redefine how users discover and curate collections of books, movies, and TV shows. Our mission is to transform passive consumption into an active, personalized journey through a data-driven "Anthology" concept.
+RecAnthology (Recommended Anthology) is an intelligent, extensible recommendation platform designed to redefine how users discover and curate collections of books, movies, and TV shows.
+
+This project serves as:
+
+- A modular backend system design exercise
+- A practical implementation of hybrid recommender systems
+- A research-informed, evaluation-driven open-source platform
+
+The objective is architectural clarity, algorithmic rigor, and measurable recommendation quality — not infrastructure maximalism.
 
 ---
 
@@ -10,52 +18,132 @@ RecAnthology (Recommended Anthology) is an intelligent, extensible recommendatio
 
 ### 1. Intelligent Discovery
 
-Leveraging a sophisticated **Hybrid Recommendation Engine** that balances explicit genre affinities (Content-Based) with implicit social patterns (Collaborative Filtering).
+A formally defined **Hybrid Recommendation Engine**:
+
+**Formula:**
+&nbsp;&nbsp;&nbsp;&nbsp;<code>FinalScore = α · C<sub>content</sub> + (1 - α) · C<sub>cf</sub></code>
+
+Where:
+
+- `C_content` — content-based score (normalized genre affinity)
+- `C_cf` — collaborative filtering score (cosine similarity between items)
+- `α` — weight parameter adapting to user interaction count/density
+
+Features:
+
+- Cold-start fallback strategies
+- Score normalization (0–100)
+- Popularity bias dampening
+- Configurable hybrid weighting
+
+---
 
 ### 2. Extensible Architecture
 
-A modular backbone that allows seamless integration of new media types (Music, Games, Podcasts) and advanced algorithmic plugins without core system disruption.
+A modular Django/DRF backend featuring:
 
-### 3. High-Performance Delivery
+- Pluggable recommendation strategies
+- Clean service-layer abstraction
+- Separation of scoring, ranking, and explanation layers
+- Evaluation and metrics as first-class modules
+- Config-driven algorithm parameters
 
-A stateless, API-first design optimized with multi-tier caching to ensure real-time responsiveness even as datasets scale into the millions.
+---
+
+### 3. Measurable Performance & Evaluation
+
+Recommendation quality is validated using offline evaluation metrics:
+
+- Precision@K
+- Recall@K
+- NDCG
+- Coverage
+- Diversity
+
+Development performance targets:
+
+- P95 recommendation latency < 200ms (local benchmark)
+- Cache hit ratio > 70%
+- Deterministic scoring across test seeds
 
 ---
 
 ## The Milestone Map
 
-### Milestone 1: The Unified Base (Foundation)
+---
 
-- [x] **Multi-Media Core**: Models for Books and TV/Movies.
-- [x] **Secure Access**: JWT-based stateless authentication.
-- [x] **Hybrid Engine v1**: Integration of Genre Affinity and Item-Similarity.
-- [x] **API Standardization**: Centralized logic via shared mixins for a consistent developer experience.
+### Milestone 1: The Unified Base (Completed)
 
-### Milestone 2: Intelligence & Optimization (Current Horizon)
+- [x] Multi-media core models (Books, Movies, TV)
+- [x] JWT-based stateless authentication
+- [x] Hybrid Engine v1 (Content + Item-Item CF)
+- [x] API standardization via shared mixins
+- [x] Redis caching layer integration
 
-- [ ] **Asynchronous Processing**: Implement background scoring and similarity pre-computation (e.g., Celery/Redis).
-- [ ] **Deep Personalization**: Fine-tuning the collaborative weight (`cf_weight`) based on user engagement levels.
-- [ ] **Interactive Documentation**: Auto-generated Swagger/OpenAPI specifications for third-party integration.
-- [ ] **Standardized Quality**: Achieving 100% linting compliance and comprehensive test coverage across all filtering modules.
-
-### Milestone 3: Ecosystem Expansion (Growth)
-
-- [ ] **User-Centric Features**: Public profiles, collaborative "Anthology" collections, and social following.
-- [ ] **Explainable AI**: Implementing a "Why this was recommended" layer for transparency.
-- [ ] **External Sync**: Real-time metadata ingestion from IMDB, TMDb, and OpenLibrary APIs.
-- [ ] **Media Diversification**: Transitioning from a "Books/TV" platform to a universal "Anthology" platform.
-
-### Milestone 4: Modernization & Insights (The Future)
-
-- [ ] **Single-Page Evolution**: Transitioning the frontend to a high-performance React/Next.js architecture.
-- [ ] **User Taste Visualization**: Interactive dashboards for users to explore their own evolving preference "map."
-- [ ] **Predictive Trend-Modeling**: Incorporating seasonal and global trending signals into the hybrid score.
+**Deliverable:**
+Functional hybrid recommender with modular architecture.
 
 ---
 
-## Technical Trajectory
+### Milestone 2: Algorithmic Maturity & Evaluation (Completed)
 
-RecAnthology is committed to the **Django/DRF** ecosystem for its robustness, while strategically moving towards **asynchronous workflows** and **headless frontend architectures** to meet modern performance standards.
+**Focus:** Make the engine technically defensible and measurable.
 
-*Document Version: 1.1.0*
-*Last Updated: February 2026*
+- [x] Formal hybrid scoring equation documented and configurable
+- [x] Adaptive `cf_weight` based on rating density
+- [x] Cold-start strategy:
+  - New users → genre-weighted popularity
+  - New items → genre-affinity boosting
+- [x] Evaluation module:
+  - Offline train/test split
+  - Precision@K
+  - Recall@K
+  - NDCG
+- [x] Similarity matrix persistence (precomputed + cached)
+- [x] Comprehensive test coverage for scoring logic
+- [x] API parameterization (`?cf=true&alpha=0.6`)
+
+**Deliverable:**
+A benchmarked, evaluation-driven hybrid recommender.
+
+---
+
+### Milestone 3: Interpretability & Data Expansion
+
+**Focus:** Increase sophistication without infrastructure overreach.
+
+- [ ] Explainable AI layer:
+  - Score decomposition
+  - Structured “Why this was recommended” response field
+- [ ] External metadata ingestion:
+  - TMDb
+  - OpenLibrary
+  - IMDb datasets (where permitted)
+- [ ] Metadata normalization & deduplication pipeline
+- [ ] Basic rate-limit handling and ingestion scheduling
+- [ ] Small reproducible benchmark dataset for evaluation
+
+**Deliverable:**
+Transparent, data-enriched recommendation system with reproducible experiments.
+
+---
+
+### Milestone 4: Product Evolution & Visualization
+
+**Focus:** User insight and interface modernization.
+
+- [ ] React/Next.js frontend (headless API consumption)
+- [ ] User taste visualization dashboard:
+  - Genre affinity radar chart
+  - Rating distribution histogram
+- [ ] Time-decay weighting for recency-aware scoring
+- [ ] Trending signal integration (optional hybrid feature boost)
+- [ ] Basic A/B testing toggle for hybrid weight experimentation
+
+**Deliverable:**
+A modern interface showcasing user preference modeling and algorithm experimentation.
+
+---
+
+**Document Version:** 2.0.0
+**Last Updated:** February 2026

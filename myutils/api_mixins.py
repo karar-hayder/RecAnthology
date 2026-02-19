@@ -139,6 +139,10 @@ class RecommendationMixin:
     ) -> Response:
         """
         Shared GET handler for private recommendation views.
+
+        Supports query parameters:
+            - ``cf`` (bool): Enable/disable collaborative filtering (default: true).
+            - ``alpha`` (float): Override cf_weight (0.0–1.0). Ignored when cf=false.
         """
         data = cache.get(cache_key)
         if isinstance(data, dict):
@@ -147,21 +151,40 @@ class RecommendationMixin:
         needed_genres = genre_prefs_fn()
         use_cf = request.GET.get("cf", "true").lower() == "true"
 
+        # Parse alpha parameter (cf_weight override)
+        alpha_raw = request.GET.get("alpha")
+        cf_weight = 0.4  # default
+        if alpha_raw is not None:
+            try:
+                cf_weight = max(0.0, min(float(alpha_raw), 1.0))
+            except (ValueError, TypeError):
+                pass
+
         if not needed_genres:
-            # Simple fallback sorting
-            order_field = (
-                "-likedPercent" if hasattr(self.model, "likedPercent") else "-startyear"
+            # Cold-start: use genre-weighted popularity fallback
+            from myutils.cold_start import get_popular_by_genre
+
+            cold_results = get_popular_by_genre(
+                item_model=self.model,
+                genre_prefs=needed_genres,
+                allowed_types=getattr(self, "allowed_types", ("books",)),
+                limit=100,
             )
-            items = self.model.objects.order_by(order_field)[:100]
-            items_data = self.serializer(items, many=True).data
+            final_media = [item for _, item in cold_results]
+            relativity_list = [score for score, _ in cold_results]
+
+            items_data = self.serializer(final_media, many=True).data
             response_data = {
                 str(idx): {
-                    "relativity": None,
+                    "relativity": rel,
                     getattr(self, "item_type_key", "item"): entry,
                 }
-                for idx, entry in enumerate(items_data)
+                for idx, (rel, entry) in enumerate(zip(relativity_list, items_data))
             }
             return Response({"length": len(items_data), "data": response_data})
+
+        # Count user ratings for adaptive alpha
+        rating_count = interaction_model.objects.filter(user=request.user).count()
 
         if use_cf:
             hybrid_results = recommendation.get_hybrid_recommendation(
@@ -171,7 +194,21 @@ class RecommendationMixin:
                 item_model=self.model,
                 item_field=item_field,
                 top_n=100,
+                cf_weight=cf_weight,
+                rating_count=rating_count,
             )
+
+            # Boost under-rated items matching user preferences
+            from myutils.cold_start import boost_new_items
+
+            hybrid_results = boost_new_items(
+                recommendations=hybrid_results,
+                interaction_model=interaction_model,
+                item_field=item_field,
+                genre_prefs=needed_genres,
+                item_model=self.model,
+            )
+
             final_media = [item for _, item in hybrid_results]
             relativity_list = [score for score, _ in hybrid_results]
         else:

@@ -2,7 +2,25 @@ import math
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple, Type
 
+from django.core.cache import cache
 from django.db.models import Model
+
+# Cache TTL for similarity results (6 hours)
+SIMILARITY_CACHE_TTL = 60 * 60 * 6
+
+
+def _similarity_cache_key(item_field: str, item_id: Any) -> str:
+    """Generate a Redis cache key for item similarity data."""
+    return f"item_sim:{item_field}:{item_id}"
+
+
+def invalidate_similarity_cache(item_field: str, item_id: Any) -> None:
+    """
+    Invalidate the cached similarity data for a specific item.
+
+    Should be called when a new rating is created/updated for the item.
+    """
+    cache.delete(_similarity_cache_key(item_field, item_id))
 
 
 def calculate_cosine_similarity(
@@ -27,11 +45,24 @@ def calculate_cosine_similarity(
 
 
 def get_item_similarities(
-    item_id: Any, interaction_model: Type[Model], item_field: str
+    item_id: Any,
+    interaction_model: Type[Model],
+    item_field: str,
+    use_cache: bool = True,
 ) -> List[Tuple[float, Any]]:
     """
-    Calculates similarities between a target item and all other items that share at least one user rating.
+    Calculates similarities between a target item and all other items
+    that share at least one user rating.
+
+    Results are cached in Redis for performance (TTL = 6 hours).
     """
+    # Check cache first
+    if use_cache:
+        cache_key = _similarity_cache_key(item_field, item_id)
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+
     # Get all users who rated this item
     users_who_rated = interaction_model.objects.filter(
         **{item_field: item_id}
@@ -62,7 +93,13 @@ def get_item_similarities(
         if sim > 0:
             similarities.append((sim, other_id))
 
-    return sorted(similarities, key=lambda x: x[0], reverse=True)
+    result = sorted(similarities, key=lambda x: x[0], reverse=True)
+
+    # Store in cache
+    if use_cache:
+        cache.set(cache_key, result, SIMILARITY_CACHE_TTL)
+
+    return result
 
 
 def get_collaborative_recommendations(

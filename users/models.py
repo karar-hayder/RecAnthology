@@ -239,9 +239,15 @@ class UserTvMediaGenrePreference(models.Model):
 
 @receiver(post_save, sender=UserBookRating)
 def update_books_preferences(sender, instance, **kwargs):
+    from myutils.collaborative_filtering import invalidate_similarity_cache
+
     instance.user.update_books_genre_preferences()
+    invalidate_similarity_cache("book", instance.book_id)
 
 
 @receiver(post_save, sender=UserTvMediaRating)
 def update_media_preferences(sender, instance, **kwargs):
+    from myutils.collaborative_filtering import invalidate_similarity_cache
+
     instance.user.update_media_genre_preferences()
+    invalidate_similarity_cache("tvmedia", instance.tvmedia_id)

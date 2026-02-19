@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "users.apps.UsersConfig",
     "Books.apps.BooksConfig",
     "moviesNshows.apps.MoviesnshowsConfig",
+    "myutils.apps.MyutilsConfig",
 ]
 
 MIDDLEWARE = [
