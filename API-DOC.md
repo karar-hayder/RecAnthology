@@ -148,6 +148,7 @@ This section documents the users-related APIs for registering users, authenticat
 - Authenticated endpoint. Returns hybrid recommendations (Content + Collaborative).
 - Optional Query Parameters:
   - `cf`: String `"true"` or `"false"` (default `"true"`). Toggles collaborative filtering.
+  - `alpha`: Float `0.0` to `1.0`. Overrides the default hybrid weight (adaptive α is used if `alpha` is omitted). Only applies when `cf=true`.
 
 **Example response:**
 

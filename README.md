@@ -97,9 +97,9 @@ RecAnthology now supports **Item-Item Collaborative Filtering** to discover patt
 **Implemented Features:**
 
 1. **Similarity Computation**: Uses Cosine Similarity to calculate affinity between items based on shared user rating patterns.
-2. **Hybrid Scoring Engine**: Integrates collaborative signals with content-based scores using a weighted merging algorithm.
-3. **Adaptive Results**: Recommendations surface items that "users like you also liked," even if they fall outside your typical genre preferences.
-4. **API Control**: Users can toggle collaborative filtering via API parameters (e.g., `?cf=true`).
+2. **Multi-Signal Scoring**: Leverages metadata like author, popularity, recency, and language to enrich content-based scores.
+3. **Adaptive Hybrid Logic**: Dynamically balances content and collaborative signals based on user interaction density (Adaptive α).
+4. **API Control**: Users can toggle collaborative filtering and override hybrid weights via API parameters (e.g., `?cf=true&alpha=0.6`).
 
 For comprehensive implementation and advanced usage, refer to [RECOMMENDATION-DOC.md](./RECOMMENDATION-DOC.md).
 

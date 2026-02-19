@@ -100,6 +100,7 @@ Functional hybrid recommender with modular architecture.
   - Recall@K
   - NDCG
 - [x] Similarity matrix persistence (precomputed + cached)
+- [x] Feature signals (Multi-signal metadata scoring)
 - [x] Comprehensive test coverage for scoring logic
 - [x] API parameterization (`?cf=true&alpha=0.6`)
 
