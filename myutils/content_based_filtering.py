@@ -6,12 +6,13 @@ from typing import (
     Literal,
     Optional,
     Sequence,
+    Set,
     Tuple,
     Type,
     Union,
 )
 
-from django.db.models import Model
+from django.db.models import Count, Model
 
 from Books.models import Book
 from Books.models import Genre as BookGenre
@@ -74,6 +75,7 @@ def _gather_recommendation_candidates(
     scoring_fn: Callable[[Any, float], float] = None,
     fallback_pref_score: float = 0,
     allowed_types: Sequence[str] = ("tvmedia", "books"),
+    already_rated: Optional[Set[Any]] = None,
 ) -> Tuple[List[Tuple[float, Any, int]], float]:
     """
     Given selected genres, gathers unique media or book items and calculates their raw recommendation score.
@@ -92,7 +94,9 @@ def _gather_recommendation_candidates(
         name for name in ("tvmedia", "books") if name in allowed_types
     ]
 
-    already_recommended_obj_ids: set[int] = set()
+    if already_rated is None:
+        already_rated = set()
+    already_recommended_obj_ids: Set[Any] = set(already_rated)
     object_score_candidates: List[Tuple[float, Any, int]] = []
     greatest_found_score: float = 0
 
@@ -100,9 +104,16 @@ def _gather_recommendation_candidates(
         for related_name in RELATED_NAMES:
             if not hasattr(genre, related_name):
                 continue
+            # Determine rating count lookup for popularity sorting
+            rating_lookup = (
+                "usertvmediarating" if related_name == "tvmedia" else "userbookrating"
+            )
+
             related_queryset = (
                 getattr(genre, related_name)
-                .all()
+                .exclude(pk__in=already_rated)
+                .annotate(num_ratings=Count(rating_lookup))
+                .order_by("-num_ratings")
                 .prefetch_related("genre")[:max_per_genre]
             )
             for obj in related_queryset:
@@ -129,7 +140,7 @@ def _normalize_and_format_scores(
     if float(max_possible_score) == 0:
         max_possible_score = 1  # avoid division by zero
     normalized_suggestions: List[Tuple[float, Any]] = []
-    for raw_score, media_obj, genre_count in media_score_candidates:
+    for raw_score, media_obj, _ in media_score_candidates:
         relativity: float = round(
             (float(raw_score) / float(max_possible_score)) * 100, decimal_places
         )
@@ -144,7 +155,7 @@ def get_content_based_recommendations(
     max_media_per_genre: int,
     scoring_fn: Callable[[Any, float], float] = None,
     relativity_decimals: int = 2,
-    default_preference_score: float = 6,
+    default_preference_score: float = 0.0,
     allowed_types: Sequence[str] = (
         "tvmedia",
         "books",
@@ -152,6 +163,7 @@ def get_content_based_recommendations(
     user: Optional[Any] = None,
     interaction_model: Optional[Type[Model]] = None,
     item_field: Optional[str] = None,
+    already_rated: Optional[Set[Any]] = None,
 ) -> List[Tuple[float, Any]]:
     """
     Generate media (or book) recommendations based on user genre preferences.
@@ -184,6 +196,7 @@ def get_content_based_recommendations(
         scoring_fn,
         float(default_preference_score),
         allowed_types=allowed_types,
+        already_rated=already_rated,
     )
 
     # Apply feature signal bonuses to each candidate

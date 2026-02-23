@@ -58,11 +58,12 @@ def get_hybrid_recommendation(
     interaction_model: Any,
     item_model: Any,
     item_field: str,
-    max_num_genres: int = 10,
-    max_media_per_genre: int = 20,
+    max_num_genres: int = 30,
+    max_media_per_genre: int = 100,
     top_n: int = 100,
     cf_weight: float = 0.4,
     rating_count: Optional[int] = None,
+    already_rated: Optional[set[Any]] = None,
 ) -> List[Tuple[float, Any]]:
     """
     Combines genre-based recommendations with collaborative filtering.
@@ -90,11 +91,17 @@ def get_hybrid_recommendation(
         user=user,
         interaction_model=interaction_model,
         item_field=item_field,
+        already_rated=already_rated,
     )
 
     # 2. Get collaborative recommendations
     cf_recs = get_collaborative_recommendations(
-        user, interaction_model, item_model, item_field, top_n=top_n
+        user,
+        interaction_model,
+        item_model,
+        item_field,
+        top_n=top_n,
+        already_rated=already_rated,
     )
 
     # 3. Merge: FinalScore = α · C_content + (1 - α) · C_cf

@@ -1,6 +1,6 @@
 import math
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from django.core.cache import cache
 from django.db.models import Model
@@ -49,16 +49,16 @@ def get_item_similarities(
     interaction_model: Type[Model],
     item_field: str,
     use_cache: bool = True,
+    shrinkage: float = 25.0,  # Regularization term λ
 ) -> List[Tuple[float, Any]]:
     """
-    Calculates similarities between a target item and all other items
-    that share at least one user rating.
-
-    Results are cached in Redis for performance (TTL = 6 hours).
+    Calculates similarities with shrinkage regularization:
+    shrunk_sim = (n / (n + lambda)) * sim
+    where n is the number of co-ratings.
     """
     # Check cache first
     if use_cache:
-        cache_key = _similarity_cache_key(item_field, item_id)
+        cache_key = _similarity_cache_key(item_field, f"{item_id}_shrunk_{shrinkage}")
         cached = cache.get(cache_key)
         if cached is not None:
             return cached
@@ -68,12 +68,11 @@ def get_item_similarities(
         **{item_field: item_id}
     ).values_list("user_id", flat=True)
 
-    # Get all ratings for these users (to build item profiles)
+    # Get all ratings for these users
     related_ratings = interaction_model.objects.filter(
         user_id__in=users_who_rated
     ).select_related(item_field)
 
-    # item_ratings[item_id][user_id] = rating
     item_ratings: Dict[Any, Dict[int, float]] = defaultdict(dict)
     for r in related_ratings:
         iid = getattr(r, f"{item_field}_id")
@@ -89,9 +88,19 @@ def get_item_similarities(
     for other_id, other_ratings in item_ratings.items():
         if other_id == item_id:
             continue
+
+        common_users = set(target_ratings.keys()) & set(other_ratings.keys())
+        n = len(common_users)
+        if n == 0:
+            continue
+
         sim = calculate_cosine_similarity(target_ratings, other_ratings)
-        if sim > 0:
-            similarities.append((sim, other_id))
+
+        # Apply shrinkage
+        shrunk_sim = (float(n) / (float(n) + shrinkage)) * sim
+
+        if shrunk_sim > 0:
+            similarities.append((shrunk_sim, other_id))
 
     result = sorted(similarities, key=lambda x: x[0], reverse=True)
 
@@ -108,11 +117,12 @@ def get_collaborative_recommendations(
     item_model: Type[Model],
     item_field: str,
     top_n: int = 10,
+    already_rated: Optional[set[Any]] = None,
 ) -> List[Tuple[float, Any]]:
     """
-    Generates collaborative recommendations for a user based on their high-rated items.
+    Generates collaborative recommendations with candidate pool limiting.
     """
-    # Get user's high-rated items (e.g., rating >= 7)
+    # Get user's high-rated items (rating >= 7)
     user_interactions = interaction_model.objects.filter(
         user=user, rating__gte=7
     ).values_list(item_field, "rating")
@@ -122,18 +132,27 @@ def get_collaborative_recommendations(
     item_scores: Dict[Any, float] = defaultdict(float)
     item_weights: Dict[Any, float] = defaultdict(float)
 
-    for item_id, user_rating in user_interactions:
+    # Candidate pool limiting: only consider items similar to the user's top-N rated items
+    # to reduce noise and increase signal-to-noise ratio.
+    sorted_interactions = sorted(user_interactions, key=lambda x: x[1], reverse=True)[
+        :10
+    ]
+
+    for item_id, user_rating in sorted_interactions:
         similarities = get_item_similarities(item_id, interaction_model, item_field)
-        for sim, sim_item_id in similarities:
-            # Simple weighted average of similarities
+        # Limit similarity candidates per item to further reduce noise
+        for sim, sim_item_id in similarities[:50]:
             item_scores[sim_item_id] += float(sim) * float(user_rating)
             item_weights[sim_item_id] += float(sim)
 
     # Normalize scores and fetch objects
     recommendations = []
-    already_rated = set(
-        interaction_model.objects.filter(user=user).values_list(item_field, flat=True)
-    )
+    if already_rated is None:
+        already_rated = set(
+            interaction_model.objects.filter(user=user).values_list(
+                item_field, flat=True
+            )
+        )
 
     for item_id, total_score in item_scores.items():
         if item_id in already_rated:
@@ -147,13 +166,11 @@ def get_collaborative_recommendations(
     top_recommendations = recommendations[:top_n]
     top_ids = [iid for _, iid in top_recommendations]
 
-    # Fetch actual objects and retain scores
     items_map = {obj.pk: obj for obj in item_model.objects.filter(pk__in=top_ids)}
 
     final_results = []
     for score, iid in top_recommendations:
         if iid in items_map:
-            # Normalize score to 0-100 (assuming max rating is 10)
             normalized_score = min(max(float(score) * 10, 0), 100)
             final_results.append((normalized_score, items_map[iid]))
 
