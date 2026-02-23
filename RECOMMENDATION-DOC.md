@@ -83,7 +83,7 @@ The bonus is summed from multiple signals and capped at 30 points to ensure genr
 - **Internal Helper Functions:**
   - `_sort_and_select_top_genres`: Ranks genres by user preference.
   - `_calculate_media_recommendation_score`: Scores individual items based on genre overlap.
-  - `_gather_recommendation_candidates`: Fetches potential matches from the database.
+  - `_gather_recommendation_candidates`: Fetches potential matches from the database. **Note**: Already-rated items are excluded *before* the QuerySet is sliced to ensure the candidate pool is fully utilized.
   - `_normalize_and_format_scores`: Scales raw scores to a 0-100 relativity rating.
 
 ---
@@ -95,7 +95,11 @@ The bonus is summed from multiple signals and capped at 30 points to ensure genr
 - **Purpose:** Predicts user interest by finding similar items based on global co-rating patterns.
 - **Key Functions:**
   - `calculate_cosine_similarity`: Computes the angle between item rating vectors.
-  - `get_item_similarities`: Identifies items with high affinity to a target item. **Results are cached in Redis** (TTL: 6 hours) for performance.
+  - `get_item_similarities`: Identifies items with high affinity to a target item.
+    - **Similarity Shrinkage**: Applies regularization ($\frac{n}{n + \lambda}$) to prevent "noisy" similarities for items with few co-ratings (default $\lambda = 25.0$).
+    - **Caching**: Results are cached in Redis (TTL: 6 hours) for performance.
+  - `get_collaborative_recommendations`:
+    - **Candidate Pool Limiting**: Filters the search space to only include items similar to the user's top-10 rated items, significantly improving the signal-to-noise ratio.
   - `invalidate_similarity_cache`: Clears cached similarity data for a specific item. Called automatically when new ratings are saved.
 
 ---
@@ -129,10 +133,13 @@ Offline recommendation quality measurement using standard IR metrics.
 ### Running Evaluation
 
 ```sh
-python manage.py evaluate_engine --k 10 --split 0.8 --seed 42
+python manage.py evaluate_engine --k 10 --split 0.8 --seed 42 --mode [hybrid|content|popularity]
 ```
 
-This command runs offline evaluation against existing rating data and prints Precision@K, Recall@K, and NDCG@K for both Books and TV Media.
+This command runs offline evaluation against existing rating data and prints Precision@K, Recall@K, and NDCG@K.
+- **Mode `hybrid`**: Standard hybrid logic (Adaptive Alpha).
+- **Mode `content`**: Pure genre-based logic (Content-only).
+- **Mode `popularity`**: Baseline ranking by global rating volume.
 
 ---
 

@@ -4,7 +4,6 @@ import threading
 import uuid
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "RecAnthology.settings")
-
 import django
 
 django.setup()
@@ -69,58 +68,107 @@ def create_tvmedia(media_list, tg_objs, media_start, media_end, types):
             print(f"Created {i} media items")
 
 
-def create_ratings_chunk(users, books, media_list, user_range):
+def create_ratings_chunk(users, books, media_list, user_range, bg_objs, tg_objs):
     for idx, user in enumerate(
         users[user_range[0] : user_range[1]], start=user_range[0]
     ):
-        # Rate some books
-        for book in random.sample(books, random.randint(10, int(len(books) * 0.2))):
-            UserBookRating.objects.get_or_create(
-                user=user, book=book, defaults={"rating": random.randint(1, 10)}
+        existing_book_ratings = UserBookRating.objects.filter(user=user).count()
+        existing_tv_ratings = UserTvMediaRating.objects.filter(user=user).count()
+
+        # Books
+        num_books_to_rate = max(50 - existing_book_ratings, 0)
+        if num_books_to_rate > 0:
+            # Pick up to 3 favorite book genres for this user
+            fav_count = min(len(bg_objs), 3)
+            fav_genres = random.sample(bg_objs, fav_count)
+            books_to_rate = min(num_books_to_rate, len(books))
+            books_sample = random.sample(books, books_to_rate)
+            for book in books_sample:
+                # Bias rating: 7-10 if matches fav genre, 1-6 otherwise
+                book_genres = set(book.genre.all())
+                is_fav = any(g in book_genres for g in fav_genres)
+                rating = random.randint(7, 10) if is_fav else random.randint(1, 6)
+                UserBookRating.objects.get_or_create(
+                    user=user, book=book, defaults={"rating": rating}
+                )
+
+        # TV Media
+        num_tv_to_rate = max(50 - existing_tv_ratings, 0)
+        if num_tv_to_rate > 0:
+            # Pick up to 5 favorite TV genres for this user
+            fav_count = min(len(tg_objs), 5)
+            fav_genres = random.sample(tg_objs, fav_count)
+
+            # Popularity Bias: Pick 70% of items from the "Head" (first 15% of catalog)
+            # and 30% from the "Tail". This aligns with the engine's sorting.
+            tv_to_rate = min(num_tv_to_rate, len(media_list))
+            head_size = max(int(len(media_list) * 0.15), 1)
+            head_pool = media_list[:head_size]
+            tail_pool = media_list[head_size:]
+
+            num_head = int(tv_to_rate * 0.7)
+            num_tail = tv_to_rate - num_head
+
+            sample_head = random.sample(head_pool, min(num_head, len(head_pool)))
+            sample_tail = random.sample(tail_pool, min(num_tail, len(tail_pool)))
+            media_sample = sample_head + sample_tail
+            random.shuffle(media_sample)
+
+            for media in media_sample:
+                # Bias rating: 7-10 if matches fav genre, 1-6 otherwise
+                tv_genres = set(media.genre.all())
+                is_fav = any(g in tv_genres for g in fav_genres)
+                rating = random.randint(7, 10) if is_fav else random.randint(1, 6)
+                UserTvMediaRating.objects.get_or_create(
+                    user=user, tvmedia=media, defaults={"rating": rating}
+                )
+
+        total_users = user_range[1] - user_range[0]
+        if (idx - user_range[0]) % 10 == 0 or (idx + 1) == user_range[1]:
+            percent_done = ((idx - user_range[0] + 1) / total_users) * 100
+            print(
+                f"Progress: {idx - user_range[0] + 1}/{total_users} users rated ({percent_done:.1f}%)"
             )
-        # Rate some TV media
-        for media in random.sample(
-            media_list, random.randint(10, int(len(media_list) * 0.2))
-        ):
-            UserTvMediaRating.objects.get_or_create(
-                user=user, tvmedia=media, defaults={"rating": random.randint(1, 10)}
-            )
-        if idx % 20 == 0:
-            print(f"Created ratings for {idx} users")
 
 
 def seed():
     print("Seeding data...")
 
-    # 1. Create Genres
-    book_genres = [
-        "Fiction",
-        "Mystery",
-        "Sci-Fi",
-        "Fantasy",
-        "Biography",
-        "History",
-        "Horror",
-        "Romance",
-    ]
-    tv_genres = [
-        "Action",
-        "Comedy",
-        "Drama",
-        "Thriller",
-        "Documentary",
-        "Animation",
-        "Crime",
-        "Adventure",
-    ]
+    # 1. Fetch All Genres (assuming they were created by check_data/seed scripts previously)
+    bg_objs = list(BookGenre.objects.all())
+    tg_objs = list(TvGenre.objects.all())
 
-    bg_objs = [BookGenre.objects.get_or_create(name=name)[0] for name in book_genres]
-    tg_objs = [TvGenre.objects.get_or_create(name=name)[0] for name in tv_genres]
+    if not bg_objs or not tg_objs:
+        print("Warning: No genres found. Seeding basic genre set...")
+        book_genres = [
+            "Fiction",
+            "Mystery",
+            "Sci-Fi",
+            "Fantasy",
+            "Biography",
+            "History",
+            "Horror",
+            "Romance",
+        ]
+        tv_genres = [
+            "Action",
+            "Comedy",
+            "Drama",
+            "Thriller",
+            "Documentary",
+            "Animation",
+            "Crime",
+            "Adventure",
+        ]
+        bg_objs = [
+            BookGenre.objects.get_or_create(name=name)[0] for name in book_genres
+        ]
+        tg_objs = [TvGenre.objects.get_or_create(name=name)[0] for name in tv_genres]
 
     # 2. Create Users (threaded)
     users = []
-    NUM_USERS = 199
-    num_threads = 4  # Tune this for your environment.
+    NUM_USERS = 299
+    num_threads = 8
     user_threads = []
     slice_len = NUM_USERS // num_threads
     _ = [threading.Lock() for _ in range(num_threads)]
@@ -142,7 +190,7 @@ def seed():
     # 3. Create Books (threaded)
     books = list(Book.objects.all())
     NUM_BOOKS = 400 - 51
-    num_book_threads = 3
+    num_book_threads = 6
     slice_len_b = NUM_BOOKS // num_book_threads
     book_threads = []
     for t in range(num_book_threads):
@@ -161,7 +209,7 @@ def seed():
     # 4. Create TV Media (threaded)
     media_list = list(TvMedia.objects.all())
     NUM_MEDIA = 400 - 51
-    num_media_threads = 3
+    num_media_threads = 6
     slice_len_m = NUM_MEDIA // num_media_threads
     tvmedia_threads = []
     types = ["Movie", "TV Series"]
@@ -183,7 +231,7 @@ def seed():
     media_list = list(set(media_list))
 
     # 5. Create Ratings (User Interactions, threaded by users)
-    num_rating_threads = 6
+    num_rating_threads = 12
     ratings_threads = []
     N_users = len(users)
     rating_chunk_size = N_users // num_rating_threads
@@ -191,12 +239,19 @@ def seed():
         start = t * rating_chunk_size
         end = (t + 1) * rating_chunk_size if t < num_rating_threads - 1 else N_users
         th = threading.Thread(
-            target=create_ratings_chunk, args=(users, books, media_list, (start, end))
+            target=create_ratings_chunk,
+            args=(users, books, media_list, (start, end), bg_objs, tg_objs),
         )
         ratings_threads.append(th)
         th.start()
     for th in ratings_threads:
         th.join()
+
+    # Update preferences for each user one final time at the end
+    print("Updating user genre preferences one final time at the end...")
+    for user in users:
+        user.update_books_genre_preferences()
+        user.update_media_genre_preferences()
 
     print("Successfully seeded:")
     print(f"- {len(bg_objs)} Book Genres")
