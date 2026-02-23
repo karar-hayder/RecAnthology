@@ -1,4 +1,3 @@
-from django.apps import apps
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
@@ -8,11 +7,12 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from Books.models import Book
-from Books.models import Genre
 from Books.models import Genre as BookGenre
 from moviesNshows.models import Genre as TvGenre
 from moviesNshows.models import TvMedia
 from myutils.ExtraTools import scale
+
+Genre: BookGenre | TvGenre | None = None
 
 
 class CustomUserManager(BaseUserManager):
@@ -51,12 +51,8 @@ class CustomUser(AbstractUser):
     def __str__(self) -> str:
         return f"{self.get_full_name()}"
 
-    from django.apps import apps
-    from django.db import transaction
-
     def update_books_genre_preferences(self):
         cache.delete(f"{self.pk}_books_recomendation")
-        UserBooksGenrePreference = apps.get_model("users", "UserBooksGenrePreference")
         ratings = (
             self.rated_books.select_related("book")
             .prefetch_related("book__genre")
@@ -109,9 +105,6 @@ class CustomUser(AbstractUser):
 
     def update_media_genre_preferences(self):
         cache.delete(f"{self.pk}_tvmedia_recomendation")
-        UserTvMediaGenrePreference = apps.get_model(
-            "users", "UserTvMediaGenrePreference"
-        )
         ratings = (
             self.rated_tvmedia.select_related("tvmedia")
             .prefetch_related("tvmedia__genre")
@@ -162,16 +155,20 @@ class CustomUser(AbstractUser):
             if to_create:
                 UserTvMediaGenrePreference.objects.bulk_create(to_create)
 
-    def get_books_genre_preferences(self) -> dict[Genre, float]:
+    def get_books_genre_preferences(self) -> dict[BookGenre, float]:
         return {
-            BookGenre(pref.genre.pk): float(pref.preference)
-            for pref in self.books_genre_preferences.order_by("-preference")
+            pref.genre: float(pref.preference)
+            for pref in self.books_genre_preferences.select_related("genre").order_by(
+                "-preference"
+            )
         }
 
-    def get_media_genre_preferences(self) -> dict[Genre, float]:
+    def get_media_genre_preferences(self) -> dict[TvGenre, float]:
         return {
-            TvGenre(pref.genre.pk): float(pref.preference)
-            for pref in self.media_genre_preferences.order_by("-preference")
+            pref.genre: float(pref.preference)
+            for pref in self.media_genre_preferences.select_related("genre").order_by(
+                "-preference"
+            )
         }
 
 
